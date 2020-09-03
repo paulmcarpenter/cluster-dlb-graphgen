@@ -20,15 +20,7 @@ def Usage(argv):
 
 def graph_to_nanos_string(n, deg, G, extranks_to_node):
 
-    used_extranks = [False for node in extranks_to_node]
     desc = []
-
-    def find_extrank_for_node(node):
-        for extrank,mynode in enumerate(extranks_to_node):
-            if mynode == node and not used_extranks[extrank]:
-                used_extranks[extrank] = True
-                return extrank
-        assert False
 
     def groupname(j):
         return solve.group_n(j,n)
@@ -40,14 +32,11 @@ def graph_to_nanos_string(n, deg, G, extranks_to_node):
         gdesc = []
         # Master of group g should be on node g if possible
         if G.has_edge( groupname(g), nodename(g)):
-            gdesc.append( find_extrank_for_node(g) )
+            gdesc.append(g)
         for node in range(0,n):
             if node != g and G.has_edge( groupname(g), nodename(node)):
-                gdesc.append( find_extrank_for_node(node) )
+                gdesc.append(node)
         desc.append(gdesc)
-
-    for status in used_extranks:
-        assert status == True
 
     return ';'.join([ ','.join([str(e) for e in gdesc]) for gdesc in desc])
 
