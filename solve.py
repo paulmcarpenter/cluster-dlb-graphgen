@@ -11,71 +11,92 @@ import scipy.stats
 import rebalance
 import time
 
+num_vranks = None
+num_nodes = None
+squash = None
+degree = None
+
 
 def random_permutation(n):
     """Return a random permutation of n as a list"""
     return random.sample( range(0,n), n)
 
-def group_n(j,n):
-    assert 0 <= j and j < n
-    return 'Vrank%d' % j
+def vrank(v):
+    global num_vranks
+    assert 0 <= v and v < num_vranks
+    return 'Vrank%d' % v
 
-def node_n(i,n):
-    assert 0 <= i and i < n
+def node(i):
+    global num_nodes
+    assert 0 <= i and i < num_nodes
     return 'Node%d' % i
 
-
-def generate_random_bipartite_matching(n, deg, inverted):
+def generate_random_bipartite_matching():
+    global num_vranks
+    global num_nodes
+    global squash
+    global degree
     start_time = time.time()
-    assert inverted == False
-
-    def group(j):
-        return group_n(j,n)
-
-    def node(i):
-        return node_n(i,n)
 
     G = networkx.Graph()
-    # vertices 0, ..., n-1 are group G_0, ..., G_{n-1}
-    # vertices n, ..., 2n-1 are node N_0, ..., N_{n-1}
-    for j in range(0,n):
-        G.add_node(group(j))
+    for j in range(0,num_vranks):
+        G.add_node(vrank(j))
+    for j in range(0,num_nodes):
         G.add_node(node(j))
 
+    # Master on the primary node
     num_done = 0
-    if deg >= 1:
-        for j in range(0,n):
+    if degree >= 1:
+        for j in range(0,num_nodes):
             # Attach to node j
-            G.add_edge(group(j),node(j))
+            for sq in range(0, squash):
+                G.add_edge(vrank(j*squash+sq),node(j))
         num_done += 1
 
-    if deg >= 2:
-        for j in range(0,n):
-            # Then join to next
-            G.add_edge(group(j), node( (j+1)%n ))
-        num_done += 1
+    # If possible, connect to +1, +2, +4, ...
+    num = 0
+    while num_done < degree:
+        # We will need to do this for every squash (or not at all)
+        max_inc = 2 ** ((num+1)*squash-1) # Increment each time for last
+        # print 'num_nodes', num_nodes, 'max_inc', max_inc
+        if num_nodes > max_inc:
+            for sq in range(0,squash):
+                #print 'add', sq
+                inc = 2 ** (num*squash + sq)
+                for j in range(0,num_nodes):
+                    # sq-th vrank in each node-set
+                    v = j * squash + sq
+                    # Natural node + inc
+                    n = (j+inc) % num_nodes
+                    #print 'join', v, n
+                    G.add_edge(vrank(v), node(n))
+            num += 1
+            num_done += 1
+        else:
+            break
+    
+    for extra in range(num_done,  degree):
+        for sq in range(0, squash):
+            H = networkx.Graph()
+            my_vranks = [j * squash + sq for j in range(0,num_nodes)]
+            for j in my_vranks:
+                H.add_node(vrank(j))
+            for j in range(0,num_nodes):
+                H.add_node(node(j))
+            for j in my_vranks:
+                for i in range(0,num_nodes):
+                    if not G.has_edge(vrank(j), node(i)):
+                        H.add_edge(vrank(j), node(i))
 
-    # vertices 0, ..., n-1 are group G_0, ..., G_{n-1}
-    # vertices n, ..., 2n-1 are node N_0, ..., N_{n-1}
-    for extra in range(num_done,  deg):
-        H = networkx.Graph()
-        for j in range(0,n):
-            H.add_node(group(j))
-            H.add_node(node(j))
-        for j in range(0,n):
-            for i in range(0,n):
-                if not G.has_edge(group(j), node(i)):
-                    H.add_edge(group(j), node(i))
+            matching = networkx.max_weight_matching(H)
+            assert len(matching) == num_nodes
 
-        matching = networkx.max_weight_matching(H)
-        assert len(matching) == n
+            for u, v in matching:
+                assert not G.has_edge(u,v)
+                G.add_edge(u,v)
 
-        for u, v in matching:
-            assert not G.has_edge(u,v)
-            G.add_edge(u,v)
-
-        if time.time() > start_time + 60:
-            raise ValueError
+            if time.time() > start_time + 60:
+                raise ValueError
     # write_dot(G, 'test.dot')
     return G
 
@@ -83,12 +104,6 @@ def generate_random_bipartite_greedy(n, deg, inverted):
     # My attempt, unsure if uniform distribution
 
     start_time = time.time()
-
-    def group(j):
-        return group_n(j,n)
-
-    def node(i):
-        return node_n(i,n)
 
     done = False
     trial = 1
@@ -100,7 +115,7 @@ def generate_random_bipartite_greedy(n, deg, inverted):
         # vertices 0, ..., n-1 are group G_0, ..., G_{n-1}
         # vertices n, ..., 2n-1 are node N_0, ..., N_{n-1}
         for j in range(0,n):
-            G.add_node(group(j))
+            G.add_node(vrank(j))
             G.add_node(node(j))
 
         # Degree could be zero if actually asked for deg=n and applied inverse
@@ -109,13 +124,13 @@ def generate_random_bipartite_greedy(n, deg, inverted):
             if deg >= 1:
                 for j in range(0,n):
                     # Attach to node j
-                    G.add_edge(group(j),node(j))
+                    G.add_edge(vrank(j),node(j))
                 num_done += 1
 
             if deg >= 2:
                 for j in range(0,n):
                     # Then join to next
-                    G.add_edge(group(j), node( (j+1)%n ))
+                    G.add_edge(vrank(j), node( (j+1)%n ))
                 num_done += 1
 
         if deg > num_done:
@@ -123,7 +138,7 @@ def generate_random_bipartite_greedy(n, deg, inverted):
                 # Which nodes are valid?
                 valid_nodes = []
                 for i in range(0,n):
-                    if (G.degree(node(i)) < deg) and (not G.has_edge(group(j), node(i))):
+                    if (G.degree(node(i)) < deg) and (not G.has_edge(vrank(j), node(i))):
                         # Can attach to i
                         valid_nodes.append(i)
                 if inverted:
@@ -138,11 +153,11 @@ def generate_random_bipartite_greedy(n, deg, inverted):
                     break
                 nodes = random.sample(valid_nodes, deg-num_done)
                 for i in nodes:
-                    assert not G.has_edge(group(j), node(i))
-                    G.add_edge(group(j), node(i))
-                    assert G.degree(group(j)) <= deg
+                    assert not G.has_edge(vrank(j), node(i))
+                    G.add_edge(vrank(j), node(i))
+                    assert G.degree(vrank(j)) <= deg
                     assert G.degree(node(i)) <= deg
-                assert G.degree(group(j)) == deg
+                assert G.degree(vrank(j)) == deg
 
         if not fail:
             done = True
@@ -160,12 +175,6 @@ def generate_random_bipartite_greedy(n, deg, inverted):
 
 def generate_random_bipartite_config_model(n, deg):
 
-    def group(j):
-        return group_n(j,n)
-
-    def node(i):
-        return node_n(i,n)
-
     start_time = time.time()
     # Use configuration model from Section 4.1 of https://arxiv.org/pdf/1804.07808.pdf
     done = False
@@ -181,19 +190,19 @@ def generate_random_bipartite_config_model(n, deg):
         # vertices 0, ..., n-1 are group G_0, ..., G_{n-1}
         # vertices n, ..., 2n-1 are node N_0, ..., N_{n-1}
         for j in range(0,n):
-            G.add_node(group(j))
+            G.add_node(vrank(j))
             G.add_node(node(j))
 
         # Degree could be zero if actually asked for deg=n and applied inverse
         if deg >= 1:
             # First join group j to node j
             for j in range(0,n):
-                G.add_edge(group(j),node(j))
+                G.add_edge(vrank(j),node(j))
 
         if deg >= 2:
             # Then join in a circle
             for j in range(0,n):
-                G.add_edge(group(j), node( (j+1)%n ))
+                G.add_edge(vrank(j), node( (j+1)%n ))
                     
         if deg >= 3:
             d = deg - 2 # Remaining edges
@@ -204,7 +213,7 @@ def generate_random_bipartite_config_model(n, deg):
                     # perm( id + s) = jd + t for any 0 <= s,t <= d-1  [paper indexes from 1 not 0]
                     lhs = perm[ i * d + s ]
                     j = lhs / d
-                    x = group(j)
+                    x = vrank(j)
                     y = node(i)
                     if G.has_edge(x,y):
                         fail = True
@@ -229,48 +238,40 @@ def generate_random_bipartite_config_model(n, deg):
 
 memo_graphs = {}
 
-def generate_random_bipartite(n, deg, seed, method = 'matching', inverted = False):
+def generate_random_bipartite(n, sq, deg, seed, method = 'matching', inverted = False):
+
+    # Set up global variables
+    global num_vranks
+    global num_nodes
+    global squash
+    global degree
+    num_vranks = n * sq
+    num_nodes = n
+    squash = sq
+    degree = deg
 
     # Use a memo so reuse graph for (n,deg,seed)
     global memo_graphs
-    key = (n,deg,seed)
+    key = (n,squash,deg,seed)
     if key in memo_graphs:
         return memo_graphs[key]
 
-    def group(j):
-        return group_n(j,n)
-
-    def node(i):
-        return node_n(i,n)
-
-    if False: #deg > (n/2):
-        # For large degrees, better to generate with deg' = n - deg
-        # then take the graph complement
-        invG = generate_random_bipartite(n, n-deg, seed, inverted = True)
-        G = networkx.Graph()
-        for j in range(0,n):
-            G.add_node(group(j))
-            G.add_node(node(j))
-        for i in range(0,n):
-            for j in range(0,n):
-                x = group(j)
-                y = node(i)
-                if not invG.has_edge(x,y):
-                    G.add_edge(x,y)
+    random.seed(seed) 
+    if method == 'config':
+        assert squash == 1
+        G = generate_random_bipartite_config_model(n, deg)
+    elif method == 'greedy':
+        assert squash == 1
+        G = generate_random_bipartite_greedy(n, deg, False)
     else:
-        random.seed(seed) 
-        if method == 'config':
-            G = generate_random_bipartite_config_model(n, deg)
-        elif method == 'greedy':
-            G = generate_random_bipartite_greedy(n, deg, inverted)
-        else:
-            assert method == 'matching'
-            G = generate_random_bipartite_matching(n, deg, inverted)
+        assert method == 'matching'
+        G = generate_random_bipartite_matching()
 
     # Check that it is acceptable
+    for j in range(0,n*sq):
+        assert G.degree(vrank(j)) == deg
     for j in range(0,n):
-        assert G.degree(group(j)) == deg
-        assert G.degree(node(j)) == deg
+        assert G.degree(node(j)) == deg*sq
 
     # Remember this graph
     memo_graphs[key] = G
@@ -278,12 +279,6 @@ def generate_random_bipartite(n, deg, seed, method = 'matching', inverted = Fals
                         
 
 def graph_to_topology(G,n):
-    def group(j):
-        return group_n(j,n)
-
-    def node(i):
-        return node_n(i,n)
-
     topology = []
     ranks = {}
     for j in range(0,n):
@@ -293,7 +288,7 @@ def graph_to_topology(G,n):
         rank += 1
 
         for i in range(0,n):
-            if G.has_edge(group(j), node(i)):
+            if G.has_edge(vrank(j), node(i)):
                 Brow.append(1)
                 if i != group:
                     ranks[(j,rank)] = i
