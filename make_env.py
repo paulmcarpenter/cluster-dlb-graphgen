@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
 def Usage(argv):
-    print argv[0], '   <#nodes>  <vranks/node>  <degree>'
+    print argv[0], '   <#vranks>  <#nodes>  <degree>'
     print '   --all          Create all topologies'
     print '   --help         Show this help'
     print '   --dot dotfile  Generate a .dot file'
@@ -39,12 +39,33 @@ def graph_to_nanos_string(n, squash, deg, G):
     return ';'.join([ ','.join([str(e) for e in gdesc]) for gdesc in desc])
 
 
-def process(n, squash, deg, seed, dotfile, method):
+def process(n, squash, deg, seed, method):
     G = solve.generate_random_bipartite(n, squash, deg, seed, method = method)
-    if not dotfile is None:
-        write_dot(G, dotfile)
 
-    return graph_to_nanos_string(n, squash, deg, G)
+    return G, graph_to_nanos_string(n, squash, deg, G)
+
+
+def find_best(vranks, nodes, deg, num_trials, dotfile, method):
+    best_imb = None
+    best_G = None
+    best_s = None
+    assert vranks % nodes == 0
+    squash = vranks / nodes
+    try:
+        for trial in range(0,num_trials):
+            G, s = process(nodes, squash, deg, trial, method=method)
+            print 'nodes=%d vranks=%d deg=%d: %s' % (nodes, vranks, deg, s),
+            imb,std = solve.evaluate_graph(G, nodes, squash, deg, samples=100)
+            print 'Imbalance %.3f +/- %.3f' % (imb, std)
+            if best_imb is None or imb < best_imb:
+                best_imb, best_G, best_s = imb, G, s
+    except ValueError:
+        print 'Exceeded time limit'
+
+    if (not dotfile is None) and (not best_G is None):
+        write_dot(best_G, dotfile)
+    return best_G, best_s
+
 
 
 def main(argv):
@@ -80,28 +101,33 @@ def main(argv):
         if len(args) != 3:
             return Usage(argv)
 
-        n = int(args[0])
-        squash = int(args[1])
+        vranks = int(args[0])
+        nodes = int(args[1])
         deg = int(args[2])
 
-        try:
-            for trial in range(0,num_trials):
-                s = process(n, squash, deg, trial, dotfile, method=method)
-                print 'export NANOS6_CLUSTER_SPLIT="%s"' % s
-        except ValueError:
-            print 'Exceeded time limit'
+        G, s = find_best(vranks, nodes, deg, num_trials, dotfile, method=method)
+        print 'export NANOS6_CLUSTER_SPLIT="%s"' % s
+
     else:
         assert dotfile is None
 
-        for nodes in range(2,32):
-            for squash in range(1,3):
-                for deg in range(1, min(nodes,8)):
+        topologies = []
+        for nodes in range(2,5):
+            for squash in range(1,4):
+                for deg in range(1, 1+min(nodes,8)):
                     try:
                         trial = 0
-                        s = process(nodes, squash, deg, trial, dotfile, method=method)
-                        print '(%d,%d,%d) : \'%s\',' % (nodes, squash, deg, s)
+                        vranks = nodes * squash
+                        G, s = find_best(vranks, nodes, deg, num_trials, dotfile, method=method)
+                        topologies.append( (vranks, nodes, deg, s) )
                     except ValueError:
-                        print '#(%d,%d)  -- exceeded time limit'
+                        print '#(nodes=%d,vranks=%d,deg=%d) -- exceeded time limit' % (nodes,vranks,deg)
+                    except AssertionError:
+                        print '#(nodes=%d,vranks=%d,deg=%d) -- assertion error' % (nodes,vranks,deg)
+        print 'topologies = {'
+        for (vranks, nodes, deg, s) in topologies:
+            print '  (%d,%d,%d) : \'%s\',' % (vranks, nodes, deg, s)
+        print '};'
 
 
 

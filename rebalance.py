@@ -269,7 +269,7 @@ def make_integer(ni, nn, allocs, L, B, C):
             frac_lost_and_j.sort()
             frac_lost_and_j.reverse()
 
-            extra_cores = C[group] - sum(ncores_int)
+            extra_cores = C[node] - sum(ncores_int)
             # print 'extra_cores', extra_cores
             for c in range(0,extra_cores):
                 # Sometimes it is not necessary to use all cores: in this case we just keep going
@@ -323,6 +323,7 @@ def run_policy(ni, nn, ranks, allocs, topology, loads, policy, min_alloc):
         print 'No work!'
     else:
         opt_allocs = optimize(ni, nn, ranks, L, B, C, policy, min_alloc)
+
     integer_allocs = make_integer(ni, nn, opt_allocs, L, B, C)
 
     # write_new_alloc(ni, nn, ranks, B, integer_allocs)

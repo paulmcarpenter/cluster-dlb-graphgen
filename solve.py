@@ -80,7 +80,6 @@ def generate_random_bipartite_matching(seed):
         for sq in range(0, squash):
 
             if sq == 0 and num_done == 1:
-                assert seed != 0
                 # Connect first vrank on each node to the next node
                 for j in range(0,num_nodes):
                     G.add_edge(vrank(j*squash), node( (j+1) % num_nodes ))
@@ -288,19 +287,20 @@ def generate_random_bipartite(n, sq, deg, seed, method = 'matching', inverted = 
     return G
                         
 
-def graph_to_topology(G,n):
+def graph_to_topology(G,num_vranks, num_nodes):
     topology = []
     ranks = {}
-    for j in range(0,n):
+    for j in range(0,num_vranks):
         Brow = []
         rank = 0
-        ranks[(j,0)] = j
-        rank += 1
+        if G.has_edge(vrank(j), node(j/squash)):
+            ranks[(j,0)] = j/squash
+            rank += 1
 
-        for i in range(0,n):
+        for i in range(0,num_nodes):
             if G.has_edge(vrank(j), node(i)):
                 Brow.append(1)
-                if i != group:
+                if i != j/squash:
                     ranks[(j,rank)] = i
                     rank += 1
             else:
@@ -310,91 +310,67 @@ def graph_to_topology(G,n):
 
     return topology, ranks
 
-def calc_max_load_per_core(ni,nn,allocs,loads):
 
-    max_lpc = 0
-    for group in range(0, ni):
-        load = loads[group]
-        total_c = 0
-        for node in range(0, nn):
-            total_c += allocs.get((group,node),0)
-        if load > 0.0:
-            max_lpc = max(max_lpc, load * 1.0 / total_c)
-    return max_lpc
+def print_loads(loads):
+    return ' '.join(['%.2f' % l for l in loads])
+
+def calc_rebalanced_loads(num_vranks, num_nodes, allocs,loads):
+
+    total_c = []
+    for vrank in range(0, num_vranks):
+        cores = 0
+        for node in range(0, num_nodes):
+            cores += allocs.get( (vrank,node), 0)
+        total_c.append(cores)
+
+    newloads = []
+    for node in range(0, num_nodes):
+        load = 0
+        for vrank in range(0, num_vranks):
+            alloc = allocs.get((vrank,node),0)
+            if alloc > 0:
+                load += 1.0 * loads[vrank] * alloc / total_c[vrank]
+        newloads.append(load)
+    return newloads
 
 
-def run_single(n, G, loads, policy):
-    topology, ranks = graph_to_topology(G,n)
+def run_single(num_vranks, num_nodes, G, loads, policy):
+    topology, ranks = graph_to_topology(G,num_vranks, num_nodes)
     allocs = None
-    opt_allocs, integer_allocs = rebalance.run_policy(n, n, ranks, allocs, topology, loads, policy)
+    min_alloc = 1
+    opt_allocs, integer_allocs = rebalance.run_policy(num_vranks, num_nodes, ranks, allocs, topology, loads, policy, min_alloc)
     return opt_allocs, integer_allocs
 
 
 
+def evaluate_graph(G, n, sq, deg, samples=100):
 
-# Not tested, probably no longer works with vranks != nodes
-def calc_degree(n, cores, max_deg, binomial_n, binomial_p, fraction_target, target_imbalance, quick = False):
+    # Set up global variables
+    global num_vranks
+    global num_nodes
+    global squash
+    global degree
+    num_vranks = n * sq
+    num_nodes = n
+    squash = sq
+    degree = deg
 
-    ni = n  # groups
-    nn = ni # Number of nodes
+    binomials = [ (1,0.5), (10, 0.5), (10,0.1) ]
+    imbs = []
 
-    imbs = dict([ (deg, []) for deg in range(1, max_deg) ])
-    valid = dict([ (deg, True) for deg in range(1, max_deg) ])
+    for (binomial_n, binomial_p) in binomials:
+        for sample in range(0,samples):
+            # print 'Sample', sample, 'of', samples
+            loads = [ scipy.stats.binom.rvs(binomial_n, binomial_p) for i in range(0,num_vranks) ]
+            if max(loads) == 0:
+                continue
+            ignore, integer_allocs = run_single(num_vranks, num_nodes, G, loads, 'optimized')
 
-    samples=10 if not quick else 1
-    for sample in range(0,samples):
-        print 'Sample', sample, 'of', samples
-        while True:
-            loads = [ scipy.stats.binom.rvs(binomial_n, binomial_p) for i in range(0,nn) ]
-            # Sometimes there is no work at all!! So continue until there is some work
-            if max(loads) > 0:
-                break
-        # loads = [486,160,25,20,10, 100,100,100,100,100]
-        # loads = [3,1,1,1,1, 1,1,1,1,1]
-        print 'Loads:', loads
+            rebalanced_loads = calc_rebalanced_loads(num_vranks, num_nodes, integer_allocs,loads)
+            # print 'Loads:', print_loads(loads), '->', print_loads(rebalanced_loads)
+            imb = max(rebalanced_loads) / (1.0*sum(loads)/num_nodes)
+            # print 'imbalance', imb
+            imbs.append(imb)
 
-        for deg in range(1, max_deg):
-            if valid[deg]:
-                # No point running more than 1 experiment if degree is 1 or 2 because the
-                # graph is always the same
-                num_exp = (20 if deg >= 3 else 1) if not quick else 1
-                num_pass = 0
-
-                try:
-                    for exp in range(0, num_exp):
-                        G = generate_random_bipartite(n, deg, exp)
-                        # write_dot(G, 'graph-%d-%d.dot' % (n,deg))
-
-                        ignore, integer_allocs = run_single(n, G, loads, 'optimized')
-
-                        # rebalance.printout(ni,nn,ranks,integer_allocs,loads)
-                        max_load = calc_max_load_per_core(ni,nn,integer_allocs,loads)
-                        # print 'max_load_per_core', max_load
-                        imb = max_load / (1.0*sum(loads)/(cores*n))
-                        # print 'imbalance', imb
-                        imbs[deg].append(imb)
-
-                except ValueError:
-                    # Could not generate random bipartite graphs
-                    print 'invalid for', deg
-                    # Assume invalid for whole region deg, ..., n-deg inclusive
-                    for d in range(deg, n-deg+1):
-                        valid[d] = False
-            
-
-    deg_valid = None
-
-    for deg in range(1, max_deg):
-        if valid[deg]:
-            total_exp = len(imbs[deg])
-            num_pass = len( [True for imb in imbs[deg] if imb <= target_imbalance] )
-            max_imb = max(imbs[deg])
-            avg_imb = 1.0 * sum(imbs[deg]) / total_exp
-            percent_pass = num_pass * 100.0 / total_exp
-            print 'Degree %2d: max imb = %5.3f, avg imb = %5.3f, fraction with imbalance <= %5.3f:  %6.2f%%' % (deg, max_imb, avg_imb, target_imbalance, percent_pass)
-            if percent_pass / 100.0 > fraction_target:
-                if deg_valid is None:
-                    deg_valid = deg
-
-    return deg_valid
+    return numpy.mean(imbs), numpy.std(imbs)
 
