@@ -229,11 +229,11 @@ def generate_random_bipartite_config_model(n, deg):
 
 memo_graphs = {}
 
-def generate_random_bipartite(n, deg, exp, method = 'matching', inverted = False):
+def generate_random_bipartite(n, deg, seed, method = 'matching', inverted = False):
 
-    # Use a memo so reuse graph for (n,deg,exp)
+    # Use a memo so reuse graph for (n,deg,seed)
     global memo_graphs
-    key = (n,deg,exp)
+    key = (n,deg,seed)
     if key in memo_graphs:
         return memo_graphs[key]
 
@@ -246,7 +246,7 @@ def generate_random_bipartite(n, deg, exp, method = 'matching', inverted = False
     if False: #deg > (n/2):
         # For large degrees, better to generate with deg' = n - deg
         # then take the graph complement
-        invG = generate_random_bipartite(n, n-deg, exp, inverted = True)
+        invG = generate_random_bipartite(n, n-deg, seed, inverted = True)
         G = networkx.Graph()
         for j in range(0,n):
             G.add_node(group(j))
@@ -258,7 +258,7 @@ def generate_random_bipartite(n, deg, exp, method = 'matching', inverted = False
                 if not invG.has_edge(x,y):
                     G.add_edge(x,y)
     else:
-    
+        random.seed(seed) 
         if method == 'config':
             G = generate_random_bipartite_config_model(n, deg)
         elif method == 'greedy':
