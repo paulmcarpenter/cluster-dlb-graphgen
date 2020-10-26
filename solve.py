@@ -18,7 +18,7 @@ def random_permutation(n):
 
 def group_n(j,n):
     assert 0 <= j and j < n
-    return 'Group%d' % j
+    return 'Vrank%d' % j
 
 def node_n(i,n):
     assert 0 <= i and i < n
