@@ -39,8 +39,8 @@ def graph_to_nanos_string(n, squash, deg, G):
     return ';'.join([ ','.join([str(e) for e in gdesc]) for gdesc in desc])
 
 
-def process(n, squash, deg, dotfile, method):
-    G = solve.generate_random_bipartite(n, squash, deg, 1, method = method)
+def process(n, squash, deg, seed, dotfile, method):
+    G = solve.generate_random_bipartite(n, squash, deg, seed, method = method)
     if not dotfile is None:
         write_dot(G, dotfile)
 
@@ -52,8 +52,9 @@ def main(argv):
     seed = 1
     doall = False
     method = 'matching'
+    num_trials =1
     try:
-        opts, args = getopt.getopt( argv[1:], 'h', ['help', 'dot=', 'seed=', 'all', 'method='])
+        opts, args = getopt.getopt( argv[1:], 'h', ['help', 'dot=', 'seed=', 'all', 'method=', 'trials='])
     except getopt.error, msg:
         print msg
         print "for help use --help"
@@ -61,13 +62,15 @@ def main(argv):
     for o,a in opts:
         if o in ('-h', '--help'):
             return Usage(argv)
-        if o == '--dot':
+        elif o == '--dot':
             dotfile = a
-        if o == '--seed':
+        elif o == '--seed':
             seed = int(a)
-        if o == '--all':
+        elif o == '--all':
             doall = True
-        if o == '--method':
+        elif o == '--trials':
+            num_trials = int(a)
+        elif o == '--method':
             method = a
             if not method in ['config', 'greedy', 'matching']:
                 return Usage(argv)
@@ -82,8 +85,9 @@ def main(argv):
         deg = int(args[2])
 
         try:
-            s = process(n, squash, deg, dotfile, method=method)
-            print 'export NANOS6_CLUSTER_SPLIT="%s"' % s
+            for trial in range(0,num_trials):
+                s = process(n, squash, deg, trial, dotfile, method=method)
+                print 'export NANOS6_CLUSTER_SPLIT="%s"' % s
         except ValueError:
             print 'Exceeded time limit'
     else:
@@ -93,7 +97,8 @@ def main(argv):
             for squash in range(1,3):
                 for deg in range(1, min(nodes,8)):
                     try:
-                        s = process(nodes, squash, deg, dotfile, method=method)
+                        trial = 0
+                        s = process(nodes, squash, deg, trial, dotfile, method=method)
                         print '(%d,%d,%d) : \'%s\',' % (nodes, squash, deg, s)
                     except ValueError:
                         print '#(%d,%d)  -- exceeded time limit'

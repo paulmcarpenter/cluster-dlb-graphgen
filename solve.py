@@ -31,7 +31,7 @@ def node(i):
     assert 0 <= i and i < num_nodes
     return 'Node%d' % i
 
-def generate_random_bipartite_matching():
+def generate_random_bipartite_matching(seed):
     global num_vranks
     global num_nodes
     global squash
@@ -53,30 +53,39 @@ def generate_random_bipartite_matching():
                 G.add_edge(vrank(j*squash+sq),node(j))
         num_done += 1
 
-    # If possible, connect to +1, +2, +4, ...
-    num = 0
-    while num_done < degree:
-        # We will need to do this for every squash (or not at all)
-        max_inc = 2 ** ((num+1)*squash-1) # Increment each time for last
-        # print 'num_nodes', num_nodes, 'max_inc', max_inc
-        if num_nodes > max_inc:
-            for sq in range(0,squash):
-                #print 'add', sq
-                inc = 2 ** (num*squash + sq)
-                for j in range(0,num_nodes):
-                    # sq-th vrank in each node-set
-                    v = j * squash + sq
-                    # Natural node + inc
-                    n = (j+inc) % num_nodes
-                    #print 'join', v, n
-                    G.add_edge(vrank(v), node(n))
-            num += 1
-            num_done += 1
-        else:
-            break
+    if seed == 0:
+        # This is probably not a good idea, but if possible, connect to +1, +2, +4, ...
+        num = 0
+        while num_done < degree:
+            # We will need to do this for every squash (or not at all)
+            max_inc = 2 ** ((num+1)*squash-1) # Increment each time for last
+            # print 'num_nodes', num_nodes, 'max_inc', max_inc
+            if num_nodes > max_inc:
+                for sq in range(0,squash):
+                    #print 'add', sq
+                    inc = 2 ** (num*squash + sq)
+                    for j in range(0,num_nodes):
+                        # sq-th vrank in each node-set
+                        v = j * squash + sq
+                        # Natural node + inc
+                        n = (j+inc) % num_nodes
+                        #print 'join', v, n
+                        G.add_edge(vrank(v), node(n))
+                num += 1
+                num_done += 1
+            else:
+                break
     
     for extra in range(num_done,  degree):
         for sq in range(0, squash):
+
+            if sq == 0 and num_done == 1:
+                assert seed != 0
+                # Connect first vrank on each node to the next node
+                for j in range(0,num_nodes):
+                    G.add_edge(vrank(j*squash), node( (j+1) % num_nodes ))
+                continue
+
             H = networkx.Graph()
             my_vranks = [j * squash + sq for j in range(0,num_nodes)]
             for j in my_vranks:
@@ -86,7 +95,8 @@ def generate_random_bipartite_matching():
             for j in my_vranks:
                 for i in range(0,num_nodes):
                     if not G.has_edge(vrank(j), node(i)):
-                        H.add_edge(vrank(j), node(i))
+                        weight = random.uniform(1.0, 2.0)
+                        H.add_edge(vrank(j), node(i), weight=weight)
 
             matching = networkx.max_weight_matching(H)
             assert len(matching) == num_nodes
@@ -265,7 +275,7 @@ def generate_random_bipartite(n, sq, deg, seed, method = 'matching', inverted = 
         G = generate_random_bipartite_greedy(n, deg, False)
     else:
         assert method == 'matching'
-        G = generate_random_bipartite_matching()
+        G = generate_random_bipartite_matching(seed)
 
     # Check that it is acceptable
     for j in range(0,n*sq):
@@ -320,6 +330,9 @@ def run_single(n, G, loads, policy):
     return opt_allocs, integer_allocs
 
 
+
+
+# Not tested, probably no longer works with vranks != nodes
 def calc_degree(n, cores, max_deg, binomial_n, binomial_p, fraction_target, target_imbalance, quick = False):
 
     ni = n  # groups
