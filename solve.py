@@ -79,7 +79,7 @@ def generate_random_bipartite_matching(seed):
     for extra in range(num_done,  degree):
         for sq in range(0, squash):
 
-            if sq == 0 and num_done == 1:
+            if sq == 0 and extra == 1:
                 # Connect first vrank on each node to the next node
                 for j in range(0,num_nodes):
                     G.add_edge(vrank(j*squash), node( (j+1) % num_nodes ))
@@ -106,7 +106,6 @@ def generate_random_bipartite_matching(seed):
 
             if time.time() > start_time + 60:
                 raise ValueError
-    # write_dot(G, 'test.dot')
     return G
 
 def generate_random_bipartite_greedy(n, deg, inverted):
@@ -355,7 +354,7 @@ def evaluate_graph(G, n, sq, deg, samples=100):
     squash = sq
     degree = deg
 
-    binomials = [ (1,0.5), (10, 0.5), (10,0.1) ]
+    binomials = [ (3,0.5) ]
     imbs = []
 
     for (binomial_n, binomial_p) in binomials:
