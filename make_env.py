@@ -9,14 +9,17 @@ import time
 from networkx.drawing.nx_pydot import write_dot
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+import write_tikz
 
 def Usage(argv):
     print argv[0], '   <#vranks>  <#nodes>  <degree>'
-    print '   --all          Create all topologies'
-    print '   --help         Show this help'
-    print '   --dot dotfile  Generate a .dot file'
-    print '   --seed s       Random seed'
-    print '   --method m     Method: config, greedy or matching'
+    print '   --all               Create all topologies'
+    print '   --help              Show this help'
+    print '   --dot dotfile       Generate a .dot file'
+    print '   --tikz-bipartite    Generate a tikz script for bipartite graph'
+    print '   --tikz-contraction  Generate a tikz script for contraction graph'
+    print '   --seed s            Random seed'
+    print '   --method m          Method: config, greedy or matching'
 
 def graph_to_nanos_string(n, squash, deg, G):
 
@@ -70,12 +73,14 @@ def find_best(vranks, nodes, deg, num_trials, dotfile, method):
 
 def main(argv):
     dotfile = None
+    tikz_bipartite = None
+    tikz_contraction = None
     seed = 1
     doall = False
     method = 'matching'
     num_trials =1
     try:
-        opts, args = getopt.getopt( argv[1:], 'h', ['help', 'dot=', 'seed=', 'all', 'method=', 'trials='])
+        opts, args = getopt.getopt( argv[1:], 'h', ['help', 'dot=', 'seed=', 'all', 'method=', 'trials=', 'tikz-bipartite=', 'tikz-contraction='])
     except getopt.error, msg:
         print msg
         print "for help use --help"
@@ -85,6 +90,10 @@ def main(argv):
             return Usage(argv)
         elif o == '--dot':
             dotfile = a
+        elif o == '--tikz-bipartite':
+            tikz_bipartite = a
+        elif o == '--tikz-contraction':
+            tikz_contraction = a
         elif o == '--seed':
             seed = int(a)
         elif o == '--all':
@@ -106,13 +115,17 @@ def main(argv):
         deg = int(args[2])
 
         G, s = find_best(vranks, nodes, deg, num_trials, dotfile, method=method)
+        if tikz_bipartite:
+            write_tikz.write_bipartite(G, tikz_bipartite)
+        if tikz_contraction:
+            write_tikz.write_contraction(G, tikz_contraction)
         print 'export NANOS6_CLUSTER_SPLIT="%s"' % s
 
     else:
         assert dotfile is None
 
         topologies = []
-        for nodes in range(2,5):
+        for nodes in range(2,8):
             for squash in range(1,4):
                 for deg in range(1, 1+min(nodes,8)):
                     try:
