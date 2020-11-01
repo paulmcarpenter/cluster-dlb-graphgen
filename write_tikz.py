@@ -1,5 +1,48 @@
 import solve
 import math
+import copy
+
+
+def subsets(l):
+    if len(l) == 1:
+        yield []
+        yield [l[0]]
+    else:
+        for vv in subsets(l[1:]):
+            yield vv
+            yield [l[0]] + vv
+
+
+def vertex_isoperimetric(G):
+    # Calculate minimum value of number of nodes / number of vranks
+    n = solve.num_nodes
+    squash = solve.squash
+    m = n * squash
+    deg = solve.degree
+
+    nodes = {}
+    for i in range(0,m):
+        nodes[i] = []
+        for j in range(0,n):
+            if G.has_edge(solve.vrank(i), solve.node(j)):
+                nodes[i].append(j)
+
+    iso = 100000
+    worst = None
+    for sub in subsets( list(range(0,m) )):
+        if len(sub) > 0 and len(sub) <= n:
+            nn = []
+            for vrank in sub:
+                for node in nodes[vrank]:
+                    if not node in nn:
+                        nn.append(node)
+            val = len(nn) * 1.0 / len(sub)
+            if val < iso:
+                worst = sub
+            iso = min(iso, val)
+    return iso, worst
+
+
 
 def write_contraction(G, tikzfile):
     n = solve.num_nodes
@@ -70,7 +113,7 @@ def write_contraction(G, tikzfile):
                             for g,h in pp:
                                 if (g == f and h == a) or (h == f and g == a):
                                     num_8cycles += 1
-                                    print 'a', a,b,d,f
+                                    #print 'a', a,b,d,f
                     elif d==f:
                         if e == a:
                             num_6cycles += 1
@@ -78,7 +121,7 @@ def write_contraction(G, tikzfile):
                             for g,h in pp:
                                 if (g == e and h == a) or (h == e and g == a):
                                     num_8cycles += 1
-                                    print 'b', a,b,d,e
+                                    #print 'b', a,b,d,e
             elif d == b and c!=a:
                 for e,f in pp:
                     if c==e:
@@ -88,7 +131,7 @@ def write_contraction(G, tikzfile):
                             for g,h in pp:
                                 if (g == f and h == a) or (h == f and g == a):
                                     num_8cycles += 1
-                                    print 'c', a,b,c,f
+                                    #print 'c', a,b,c,f
                     elif c==f:
                         if e == a:
                             num_6cycles += 1
@@ -96,7 +139,7 @@ def write_contraction(G, tikzfile):
                             for g,h in pp:
                                 if (g == e and h == a) or (h == e and g == a):
                                     num_8cycles += 1
-                                    print 'd', a,b,c,e
+                                    #print 'd', a,b,c,e
 
 
     print >> fp, r'\node at (%5.3f,%5.3f) { \bf %d vranks on %d nodes, degree %d};' % (0, radius + 2.0, m, n, deg)
@@ -114,6 +157,11 @@ def write_contraction(G, tikzfile):
     print >> fp, r'\node at (%5.3f,%5.3f) { Num 6-cycles: %d};' % (0, ym, num_6cycles / 3)
     ym -= spacing
     print >> fp, r'\node at (%5.3f,%5.3f) { Num 8-cycles: %d};' % (0, ym, num_8cycles / 4)
+    ym -= spacing
+    iso, worst = vertex_isoperimetric(G)
+    worst = ' '.join([str(v) for v in worst])
+    print >> fp, r'\node at (%5.3f,%5.3f) { Vertex isoperimetric number: %5.3f for %s};' % (0, ym, iso, worst)
+
 
 
 
