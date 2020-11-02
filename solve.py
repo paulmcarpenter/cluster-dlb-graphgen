@@ -29,29 +29,29 @@ def subsets(items, max_len, all_nodes, assume_regular):
                 vrank = items_left[0]
                 yield free_space-1, [vrank], all_nodes[vrank], len(all_nodes[vrank])
             else:
-                for free2, vv, nodes, num_nodes in sub(items_left[1:], num_items_left -1, free_space):
-                    yield free2, vv, nodes, num_nodes
+                for free2, vv, nodes, num_n in sub(items_left[1:], num_items_left -1, free_space):
+                    yield free2, vv, nodes, num_n
                     # If already has all the nodes, do not need to add more (it won't reduce the
                     # vertex isoperimetric number)
-                    if free2 > 0 and num_nodes < num_all_nodes:
+                    if free2 > 0 and num_n < num_all_nodes:
                         new_nodes = copy.copy(nodes)
                         vrank = items_left[0]
                         for node in all_nodes[vrank]:
                             if not node in new_nodes:
                                 new_nodes.append(node)
-                                num_nodes += 1
-                        yield free2-1, [vrank] + vv, new_nodes, num_nodes
+                                num_n += 1
+                        yield free2-1, [vrank] + vv, new_nodes, num_n
 
     def sub_with_first(items_left, num_items_left, free_space):
         # Always include first vrank
-        for free2, vv, nodes, num_nodes in sub(items_left[1:], num_items_left-1, free_space-1):
+        for free2, vv, nodes, num_n in sub(items_left[1:], num_items_left-1, free_space-1):
             new_nodes = copy.copy(nodes)
             vrank = items_left[0]
             for node in all_nodes[vrank]:
                 if not node in new_nodes:
                     new_nodes.append(node)
-                    num_nodes += 1
-            yield free2, [vrank] + vv, new_nodes, num_nodes
+                    num_n += 1
+            yield free2, [vrank] + vv, new_nodes, num_n
 
     if assume_regular:
         return sub_with_first(items, len(items), max_len)
@@ -107,13 +107,13 @@ def generate_random_bipartite_matching(seed, inc):
         while num_done < degree:
             for sq in range(0,squash):
                 offset = inc[sq][num_done-1]
-                print 'offset for vrank on node:', sq, 'is', offset
+                print('offset for vrank on node:', sq, 'is', offset)
                 for j in range(0,num_nodes):
                     # sq-th vrank in each node-set
                     v = j * squash + sq
                     # Natural node + inc
                     n = (j+offset) % num_nodes
-                    #print 'join', v, n
+                    #print('join', v, n)
                     G.add_edge(vrank(v), node(n))
             num += 1
             num_done += 1
@@ -262,7 +262,7 @@ def generate_random_bipartite_config_model(n, deg):
                     # Add edge between G_i and N_j whenever
                     # perm( id + s) = jd + t for any 0 <= s,t <= d-1  [paper indexes from 1 not 0]
                     lhs = perm[ i * d + s ]
-                    j = lhs / d
+                    j = int(lhs / d)
                     x = vrank(j)
                     y = node(i)
                     if G.has_edge(x,y):
@@ -335,13 +335,13 @@ def graph_to_topology(G,num_vranks, num_nodes):
         Brow = []
         rank = 0
         if G.has_edge(vrank(j), node(j/squash)):
-            ranks[(j,0)] = j/squash
+            ranks[(j,0)] = int(j/squash)
             rank += 1
 
         for i in range(0,num_nodes):
             if G.has_edge(vrank(j), node(i)):
                 Brow.append(1)
-                if i != j/squash:
+                if i != int(j/squash):
                     ranks[(j,rank)] = i
                     rank += 1
             else:
@@ -415,7 +415,7 @@ def evaluate_graph(G, n, sq, deg, samples=100):
 
     return numpy.mean(imbs), numpy.std(imbs)
 
-def vertex_isoperimetric(G, assume_regular):
+def vertex_isoperimetric(G, assume_regular=False):
     # Calculate minimum value of number of nodes / number of vranks
     global num_nodes
     global degree
@@ -430,12 +430,12 @@ def vertex_isoperimetric(G, assume_regular):
             if G.has_edge(vrank(i), node(j)):
                 all_nodes[i].append(j)
 
-    iso = 100000
-    worst = None
-    for free, sub, nodes, num_nodes in subsets( list(range(0,m)), n, all_nodes, assume_regular):
+    iso = 1.0
+    worst = list(range(0,n))
+    for free, sub, nodes, num_n in subsets( list(range(0,m)), n, all_nodes, assume_regular):
         size = n - free
         if size > 0:
-            val = num_nodes * 1.0 / size
+            val = num_n * 1.0 / size
             if val < iso:
                 worst = sub
             iso = min(iso, val)
@@ -494,8 +494,8 @@ def calc_num_cycles(G, max_len=50):
     ret_cycles = {}
     for length, count in sorted(num_cycles.items()):
         assert (count % (2*length)) == 0
-        ret_cycles[length] = count / (2*length)
-        print 'Num. cycles of length', length, 'is', ret_cycles[length]
+        ret_cycles[length] = count // (2*length)
+        print('Num. cycles of length', length, 'is', ret_cycles[length])
 
     return ret_cycles
 

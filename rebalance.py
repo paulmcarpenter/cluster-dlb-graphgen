@@ -80,34 +80,34 @@ def write_new_alloc(ni, nn, ranks, B, opt_allocs):
         for rank in range(0,nn):
             if (group,rank) in ranks.keys():
                 node = ranks[(group,rank)]
-                print >>f, opt_allocs[(group,node)]
+                print(opt_allocs[(group,node)], file=f)
         f.close()
 
 
 
 
 def printout(ni,nn,ranks,allocs,loads):
-    print '           ' + ' ' * 5 * nn + 'NUM CORES ' + ' ' * 5 * nn + 'Total_cores   Load   Load/Total_cores'
-    print '           ' + ' ' * 5 * nn + '   node   ' + ' ' * 5 * nn + '    '
-    print '           ' + ('%10d' * nn) % tuple(range(0,nn))
+    print('           ' + ' ' * 5 * nn + 'NUM CORES ' + ' ' * 5 * nn + 'Total_cores   Load   Load/Total_cores')
+    print('           ' + ' ' * 5 * nn + '   node   ' + ' ' * 5 * nn + '    ')
+    print('           ' + ('%10d' * nn) % tuple(range(0,nn)))
 
     for group in range(0, ni):
-        print 'Instance %2d' % group,
+        print('Instance %2d' % group, end='')
         for node in range(0, nn):
             if (group,node) in allocs:
-                print '%10.2f' % allocs[(group,node)],
+                print('%10.2f' % allocs[(group,node)], end='')
             else:
-                print '%10s' % '-',
+                print('%10s' % '-', end='')
         load = loads[group]
         total_c = 0
         for node in range(0, nn):
             total_c += allocs.get((group,node),0)
-        print '%10.2f' % total_c,
-        print '%10.2f' % load,
+        print('%10.2f' % total_c, end='')
+        print('%10.2f' % load, end='')
         if total_c > 0:
-            print '%10.3f' % (load/total_c)
+            print('%10.3f' % (load/total_c))
         else:
-            print '%10s' % 'inf'
+            print('%10s' % 'inf')
 
 
     used = []
@@ -116,8 +116,8 @@ def printout(ni,nn,ranks,allocs,loads):
         for group in range(0,ni):
             u += allocs.get((group,node),0)
         used.append(u)
-    print '           ' + ('%10s' % '---') * nn
-    print '           ' + ('%10.2f' * nn) % tuple(used)
+    print('           ' + ('%10s' % '---') * nn)
+    print('           ' + ('%10.2f' * nn) % tuple(used))
 
 def optimize(ni, nn, ranks, L, B, C, policy, min_alloc):
     # Minimise      -t                                        (i.e. maximise worst-case cores per load)
@@ -213,7 +213,7 @@ def optimize(ni, nn, ranks, L, B, C, policy, min_alloc):
     # Fixed entries (fixed to min_alloc)
     for k in pos_fixed:
         group,node = entries_all[k]
-        print 'a_ij', group, node, 'must be', min_alloc
+        print('a_ij', group, node, 'must be', min_alloc)
         # a_ij >= min_alloc
         row = [0.0] * num_variables
         row[k+1] = -1.0
@@ -320,7 +320,7 @@ def run_policy(ni, nn, ranks, allocs, topology, loads, policy, min_alloc):
     if max(L) == 0.0:
         # Currently no work!!!
         opt_allocs = allocs
-        print 'No work!'
+        print('No work!')
     else:
         opt_allocs = optimize(ni, nn, ranks, L, B, C, policy, min_alloc)
 
@@ -331,14 +331,14 @@ def run_policy(ni, nn, ranks, allocs, topology, loads, policy, min_alloc):
     return opt_allocs, integer_allocs
 
 def Usage(argv):
-    print argv[0], '   opts <number-of-iterations>'
-    print '   --help         Show this help'
-    print '   --equal        Assume equal loads, not indicated loads'
-    print '   --master       All work on the master'
-    print '   --slaves       No work on the master'
-    print '   --slave1       Work only on the first slave'
-    print '   --loads l      Specify the loads (comma-separated)'
-    print '   --min m        Set minimum allocation per instance to m cores'
+    print(argv[0], '   opts <number-of-iterations>')
+    print('   --help         Show this help')
+    print('   --equal        Assume equal loads, not indicated loads')
+    print('   --master       All work on the master')
+    print('   --slaves       No work on the master')
+    print('   --slave1       Work only on the first slave')
+    print('   --loads l      Specify the loads (comma-separated)')
+    print('   --min m        Set minimum allocation per instance to m cores')
 
 def main(argv):
 
@@ -348,9 +348,9 @@ def main(argv):
     min_alloc = 1 # Every instance has at least one core
     try:
         opts, args = getopt.getopt( argv[1:], "h", ["help", "equal", "master", "slaves", "slave1", "loads=", "min="])
-    except getopt.error, msg:
-        print msg
-        print "for help use --help"
+    except getopt.error as msg:
+        print(msg)
+        print("for help use --help")
         return 2
     for o,a in opts:
         if o in ('-h', '--help'):
@@ -359,7 +359,6 @@ def main(argv):
             equal = True
         elif o in ('--master', '--slaves', '--slave1'):
             policy = o[2:]
-            print 'policy', policy
         elif o == '--loads':
             cmdloads = a
         elif o == '--min':
@@ -390,15 +389,15 @@ def main(argv):
             # Use loads provided by Nanos
             loads = [ sum( [ nanosloads.get((group,node),0) for group in range(0,ni)]) for node in range(0,nn) ]
 
-        print 'Current allocation'
+        print('Current allocation')
         printout(ni,nn,ranks,allocs,loads)
 
         opt_allocs, integer_allocs = run_policy(ni, nn, ranks, allocs, topology, loads, policy, min_alloc)
 
-        print 'Optimized allocation'
+        print('Optimized allocation')
         printout(ni,nn,ranks,opt_allocs,loads)
 
-        print 'Integer allocation'
+        print('Integer allocation')
         printout(ni,nn,ranks,integer_allocs,loads)
 
 

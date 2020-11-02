@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.7
+#! /usr/bin/env python3.7
 import sys
 import getopt
 import solve
@@ -13,17 +13,17 @@ from matplotlib.backends.backend_pdf import PdfPages
 import write_tikz
 
 def Usage(argv):
-    print argv[0], '   <#vranks>  <#nodes>  <degree>'
-    print '   --all-configs       Create topologies for all configs'
-    print '   --help              Show this help'
-    print '   --desc desc         Provide description as per NANOS6_CLUSTER_SPLIT'
-    print '   --dot dotfile       Generate a .dot file'
-    print '   --tikz-bipartite    Generate a tikz script for bipartite graph'
-    print '   --tikz-contraction  Generate a tikz script for contraction graph'
-    print '   --seed s            Random seed'
-    print '   --method m          Method: config, greedy or matching'
-    print '   --stats-in-fig      Include statistics in the figure'
-    print '   --inc incr          Set increment for regular case; e.g. 1,2;3,4'
+    print(argv[0], '   <#vranks>  <#nodes>  <degree>')
+    print('   --all-configs       Create topologies for all configs')
+    print('   --help              Show this help')
+    print('   --desc desc         Provide description as per NANOS6_CLUSTER_SPLIT')
+    print('   --dot dotfile       Generate a .dot file')
+    print('   --tikz-bipartite    Generate a tikz script for bipartite graph')
+    print('   --tikz-contraction  Generate a tikz script for contraction graph')
+    print('   --seed s            Random seed')
+    print('   --method m          Method: config, greedy or matching')
+    print('   --stats-in-fig      Include statistics in the figure')
+    print('   --inc incr          Set increment for regular case; e.g. 1,2;3,4')
 
 def graph_to_nanos_string(n, squash, deg, G):
 
@@ -36,10 +36,10 @@ def graph_to_nanos_string(n, squash, deg, G):
     for g in range(0,n*squash):
         gdesc = []
         # Master of group g should be on node g if possible
-        if G.has_edge( solve.vrank(g), solve.node(g/squash)):
-            gdesc.append(g/squash)
+        if G.has_edge( solve.vrank(g), solve.node(g//squash)):
+            gdesc.append(g//squash)
         for node in range(0,n):
-            if node != g/squash and G.has_edge( solve.vrank(g), solve.node(node)):
+            if node != g//squash and G.has_edge( solve.vrank(g), solve.node(node)):
                 gdesc.append(node)
         desc.append(gdesc)
 
@@ -57,17 +57,17 @@ def find_best(vranks, nodes, deg, num_trials, dotfile, method, inc):
     best_G = None
     best_s = None
     assert vranks % nodes == 0
-    squash = vranks / nodes
+    squash = vranks // nodes
     try:
         for trial in range(0,num_trials):
             G, s = process(nodes, squash, deg, trial, method=method, inc=inc)
-            print 'nodes=%d vranks=%d deg=%d: %s' % (nodes, vranks, deg, s),
+            print('nodes=%d vranks=%d deg=%d: %s' % (nodes, vranks, deg, s), end='')
             imb,std = solve.evaluate_graph(G, nodes, squash, deg, samples=100)
-            print 'Imbalance %.3f +/- %.3f' % (imb, std)
+            print('Imbalance %.3f +/- %.3f' % (imb, std))
             if best_imb is None or imb < best_imb:
                 best_imb, best_G, best_s = imb, G, s
     except ValueError:
-        print 'Exceeded time limit'
+        print('Exceeded time limit')
 
     if (not dotfile is None) and (not best_G is None):
         write_dot(best_G, dotfile)
@@ -76,18 +76,18 @@ def find_best(vranks, nodes, deg, num_trials, dotfile, method, inc):
 def unpack_inc_str(inc_str, vranks, num_nodes, degree, squash):
     inc = [[int(x) for x in vr.split(',')] for vr in inc_str.split(';')]
     if len(inc) != squash:
-        print 'inc', inc
-        print 'squash', squash
-        print 'Number of semicolon-separated blocks in --inc must match the number of vranks per node'
+        print('inc', inc)
+        print('squash', squash)
+        print('Number of semicolon-separated blocks in --inc must match the number of vranks per node')
         sys.exit(1)
     if max([len(v) for v in inc]) >= degree:
-        print 'Maximum size of a semicolon-separated block is the degree-1'
+        print('Maximum size of a semicolon-separated block is the degree-1')
         sys.exit(1)
     if max([len(v) for v in inc]) != min([len(v) for v in inc]):
-        print 'Each semicolon-separated block must be the same length'
+        print('Each semicolon-separated block must be the same length')
         sys.exit(1)
     if max([max(v) for v in inc]) >= num_nodes:
-        print 'All offsets modulo #nodes must be less than the number of nodes'
+        print('All offsets modulo #nodes must be less than the number of nodes')
         sys.exit(1)
     return inc
 
@@ -106,9 +106,9 @@ def main(argv):
     inc_str = None
     try:
         opts, args = getopt.getopt( argv[1:], 'h', ['help', 'dot=', 'seed=', 'all-configs', 'method=', 'trials=', 'tikz-bipartite=', 'tikz-contraction=', 'desc=', 'stats-in-fig', 'inc=', 'all-inc'])
-    except getopt.error, msg:
-        print msg
-        print "for help use --help"
+    except getopt.error as msg:
+        print(msg)
+        print("for help use --help")
         return 2
     for o,a in opts:
         if o in ('-h', '--help'):
@@ -143,48 +143,48 @@ def main(argv):
         vals = {}
         squash = 2
         deg = 2   # Only degree 2 implemented
-        vv = list(range(6,25, squash))
+        vv = list(range(6,21, squash))
         #vv = list(range(22,24, squash))
         #vv = list(range(30,32, squash))
 
 
         def print_row(vranks):
-            max_inc = 1+int(vranks/squash/2) # max_inc + 1
+            max_inc = 1+int(vranks//squash//2) # max_inc + 1
             for k,x in enumerate(range(2, max_inc)):
                 if k == 0:
-                    print '%2d: ' % vranks,
+                    print( '%2d: ' % vranks, end='')
                 else:
-                    print '',
+                    print('', end='')
                 n4, n6, n8, iso = vals[ (vranks,x)]
-                print '%3d %3d %3d' % (n4, n6, n8),
-            print
+                print('%3d %3d %3d' % (n4, n6, n8), end='')
+            print()
             for k,x in enumerate(range(2, max_inc)):
                 if k == 0:
-                    print '   ',
+                    print('   ', end='')
                 else:
-                    print '',
+                    print('', end='')
                 n4, n6, n8, iso = vals[ (vranks,x)]
-                print '    %5.3f  ' % iso,
-            print
-            print
+                print('    %5.3f  ' % iso, end='')
+            print()
+            print()
 
 
         for vranks in vv:
-            nodes = vranks / squash
-            for x in range(2, 1+int(nodes/2)):
+            nodes = vranks // squash
+            for x in range(2, 1+int(nodes//2)):
                 inc = [ [1], [x] ]
-                print inc
+                print(inc)
                 G, s = find_best(vranks, nodes, deg, num_trials, dotfile, method=method, inc=inc)
                 num_cycles = solve.calc_num_cycles(G, max_len=8)
                 vertex_iso, worst = solve.vertex_isoperimetric(G, True)
                 vals[ (vranks,x) ] = (num_cycles[4], num_cycles[6], num_cycles[8], vertex_iso)
             print_row(vranks)
 
-        print 'Vranks' + (' ' * 4 * nodes) + 'Increment'
-        print '     ',
+        print('Vranks' + (' ' * 4 * nodes) + 'Increment')
+        print( '     ', end='')
         for k,x in enumerate(range(2,nodes)):
-            print '     %3d    ' % x,
-        print
+            print('     %3d    ' % x, end='')
+        print()
         for vranks in vv:
             print_row(vranks)
 
@@ -202,7 +202,7 @@ def main(argv):
             nodes = int(args[1])
             deg = int(args[2])
 
-            squash = vranks / nodes
+            squash = vranks // nodes
             assert (vranks % nodes) == 0
             if not inc_str is None:
                 inc = unpack_inc_str(inc_str, vranks, nodes, deg, squash)
@@ -214,13 +214,13 @@ def main(argv):
             write_tikz.write_bipartite(G, tikz_bipartite, stats_in_fig)
         if tikz_contraction:
             write_tikz.write_contraction(G, tikz_contraction, stats_in_fig)
-        print 'export NANOS6_CLUSTER_SPLIT="%s"' % s
+        print('export NANOS6_CLUSTER_SPLIT="%s"' % s)
         solve.calc_num_cycles(G)
-        print 'vertex isoperimetric number:', solve.vertex_isoperimetric(G)
+        print('vertex isoperimetric number:', solve.vertex_isoperimetric(G))
 
     else:
         if desc is not None:
-            print 'Cannot use --desc and --all-configs'
+            print('Cannot use --desc and --all-configs')
             return 1
         assert dotfile is None
 
@@ -234,13 +234,13 @@ def main(argv):
                         G, s = find_best(vranks, nodes, deg, num_trials, dotfile, method=method)
                         topologies.append( (vranks, nodes, deg, s) )
                     except ValueError:
-                        print '#(nodes=%d,vranks=%d,deg=%d) -- exceeded time limit' % (nodes,vranks,deg)
+                        print('#(nodes=%d,vranks=%d,deg=%d) -- exceeded time limit' % (nodes,vranks,deg))
                     except AssertionError:
-                        print '#(nodes=%d,vranks=%d,deg=%d) -- assertion error' % (nodes,vranks,deg)
-        print 'topologies = {'
+                        print('#(nodes=%d,vranks=%d,deg=%d) -- assertion error' % (nodes,vranks,deg))
+        print('topologies = {')
         for (vranks, nodes, deg, s) in topologies:
-            print '  (%d,%d,%d) : \'%s\',' % (vranks, nodes, deg, s)
-        print '};'
+            print('  (%d,%d,%d) : \'%s\',' % (vranks, nodes, deg, s))
+        print('};')
 
 
 
