@@ -86,18 +86,24 @@ def write_contraction(G, tikzfile, stats_in_fig):
     num_4cycles = 0
     for pair, l in pairs.items():
         print pair, l
-        xofs = (y[pair[0]] - y[pair[1]]) / 50
-        yofs = (x[pair[1]] - x[pair[0]]) / 50
+        ofs = 0.04 * len(l)
+        xofs = (y[pair[0]] - y[pair[1]]) * ofs
+        yofs = (x[pair[1]] - x[pair[0]]) * ofs
         num_4cycles += len(l) * (len(l)-1) / 2
         for k, vrank in enumerate(l):
+            if pair[0] == int(vrank/squash):
+                a,b = pair[0], pair[1]
+            else:
+                a,b = pair[1], pair[0]
             if len(l) == 1:
                 pos = 0
             else:
                 pos = 1.0 - 2.0 * k / (len(l)-1)
             xm = (x[pair[0]] + x[pair[1]]) / 2 + xofs * pos
             ym = (y[pair[0]] + y[pair[1]]) / 2 + yofs * pos
-            print >> fp, r'\draw (node%d) to (%5.3f,%5.3f) to (node%d);' % (pair[0], xm, ym, pair[1])
-            print >> fp, r'\node at (%5.3f,%5.3f) { Vrank %d };' % (xm, ym, vrank)
+            #print >> fp, r'\draw[->,arrowhead=2] (node%d) to (%5.3f,%5.3f) to (node%d);' % (a, xm, ym, b)
+            print >> fp, r'\draw[-triangle 90] (node%d) to (%5.3f,%5.3f) to (node%d);' % (a, xm, ym, b)
+            print >> fp, r'\node at (%5.3f,%5.3f) { $v_{%d}$ };' % (xm-yofs*0.2, ym+xofs*0.2, vrank)
 
     # Find all 6 and 8 cycles
     num_6cycles = 0
@@ -144,7 +150,7 @@ def write_contraction(G, tikzfile, stats_in_fig):
 
 
     if stats_in_fig:
-        print >> fp, r'\node at (%5.3f,%5.3f) { \bf %d vranks on %d nodes, degree %d};' % (0, radius + 2.0, m, n, deg)
+        # print >> fp, r'\node at (%5.3f,%5.3f) { \bf %d vranks on %d nodes, degree %d};' % (0, radius + 2.0, m, n, deg)
 
         spacing = 0.5
         ym = -radius - 2.0
