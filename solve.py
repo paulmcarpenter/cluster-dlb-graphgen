@@ -31,12 +31,19 @@ def node(i):
     assert 0 <= i and i < num_nodes
     return 'Node%d' % i
 
-def generate_random_bipartite_matching(seed):
+def generate_random_bipartite_matching(seed, inc):
     global num_vranks
     global num_nodes
     global squash
     global degree
     start_time = time.time()
+
+    if inc is None:
+        assert degree == 2
+        # even vrank 2j has slave on (j+1) % num_nodes
+        # odd vrank  2j+1 has slave on (j+x) % num_nodes
+        # where x = sqrt(num_nodes)
+        inc = [ [1], [int(math.sqrt(num_nodes))] ]
 
     G = networkx.Graph()
     for j in range(0,num_vranks):
@@ -54,27 +61,20 @@ def generate_random_bipartite_matching(seed):
         num_done += 1
 
     if seed == 0:
-        # This is probably not a good idea, but if possible, connect to +1, +2, +4, ...
         num = 0
         while num_done < degree:
-            # We will need to do this for every squash (or not at all)
-            max_inc = 2 ** ((num+1)*squash-1) # Increment each time for last
-            # print 'num_nodes', num_nodes, 'max_inc', max_inc
-            if num_nodes > max_inc:
-                for sq in range(0,squash):
-                    #print 'add', sq
-                    inc = 2 ** (num*squash + sq)
-                    for j in range(0,num_nodes):
-                        # sq-th vrank in each node-set
-                        v = j * squash + sq
-                        # Natural node + inc
-                        n = (j+inc) % num_nodes
-                        #print 'join', v, n
-                        G.add_edge(vrank(v), node(n))
-                num += 1
-                num_done += 1
-            else:
-                break
+            for sq in range(0,squash):
+                offset = inc[sq][num_done-1]
+                print 'offset for vrank on node:', sq, 'is', offset
+                for j in range(0,num_nodes):
+                    # sq-th vrank in each node-set
+                    v = j * squash + sq
+                    # Natural node + inc
+                    n = (j+offset) % num_nodes
+                    #print 'join', v, n
+                    G.add_edge(vrank(v), node(n))
+            num += 1
+            num_done += 1
     
     for extra in range(num_done,  degree):
         for sq in range(0, squash):
@@ -246,7 +246,7 @@ def generate_random_bipartite_config_model(n, deg):
 
 memo_graphs = {}
 
-def generate_random_bipartite(n, sq, deg, seed, method = 'matching', inverted = False):
+def generate_random_bipartite(n, sq, deg, seed, method = 'matching', inverted = False, inc=None):
 
     # Set up global variables
     global num_vranks
@@ -273,7 +273,7 @@ def generate_random_bipartite(n, sq, deg, seed, method = 'matching', inverted = 
         G = generate_random_bipartite_greedy(n, deg, False)
     else:
         assert method == 'matching'
-        G = generate_random_bipartite_matching(seed)
+        G = generate_random_bipartite_matching(seed, inc)
 
     # Check that it is acceptable
     for j in range(0,n*sq):

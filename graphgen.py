@@ -23,6 +23,7 @@ def Usage(argv):
     print '   --seed s            Random seed'
     print '   --method m          Method: config, greedy or matching'
     print '   --stats-in-fig      Include statistics in the figure'
+    print '   --inc incr          Set increment for regular case; e.g. 1,2;3,4'
 
 def graph_to_nanos_string(n, squash, deg, G):
 
@@ -45,13 +46,13 @@ def graph_to_nanos_string(n, squash, deg, G):
     return ';'.join([ ','.join([str(e) for e in gdesc]) for gdesc in desc])
 
 
-def process(n, squash, deg, seed, method):
-    G = solve.generate_random_bipartite(n, squash, deg, seed, method = method)
+def process(n, squash, deg, seed, method, inc):
+    G = solve.generate_random_bipartite(n, squash, deg, seed, method = method, inc=inc)
 
     return G, graph_to_nanos_string(n, squash, deg, G)
 
 
-def find_best(vranks, nodes, deg, num_trials, dotfile, method):
+def find_best(vranks, nodes, deg, num_trials, dotfile, method, inc):
     best_imb = None
     best_G = None
     best_s = None
@@ -59,7 +60,7 @@ def find_best(vranks, nodes, deg, num_trials, dotfile, method):
     squash = vranks / nodes
     try:
         for trial in range(0,num_trials):
-            G, s = process(nodes, squash, deg, trial, method=method)
+            G, s = process(nodes, squash, deg, trial, method=method, inc=inc)
             print 'nodes=%d vranks=%d deg=%d: %s' % (nodes, vranks, deg, s),
             imb,std = solve.evaluate_graph(G, nodes, squash, deg, samples=100)
             print 'Imbalance %.3f +/- %.3f' % (imb, std)
@@ -72,6 +73,23 @@ def find_best(vranks, nodes, deg, num_trials, dotfile, method):
         write_dot(best_G, dotfile)
     return best_G, best_s
 
+def unpack_inc_str(inc_str, vranks, num_nodes, degree, squash):
+    inc = [[int(x) for x in vr.split(',')] for vr in inc_str.split(';')]
+    if len(inc) != squash:
+        print 'inc', inc
+        print 'squash', squash
+        print 'Number of semicolon-separated blocks in --inc must match the number of vranks per node'
+        sys.exit(1)
+    if max([len(v) for v in inc]) >= degree:
+        print 'Maximum size of a semicolon-separated block is the degree-1'
+        sys.exit(1)
+    if max([len(v) for v in inc]) != min([len(v) for v in inc]):
+        print 'Each semicolon-separated block must be the same length'
+        sys.exit(1)
+    if max([max(v) for v in inc]) >= num_nodes:
+        print 'All offsets modulo #nodes must be less than the number of nodes'
+        sys.exit(1)
+    return inc
 
 
 def main(argv):
@@ -84,8 +102,9 @@ def main(argv):
     num_trials =1
     desc = None
     stats_in_fig = False
+    inc_str = None
     try:
-        opts, args = getopt.getopt( argv[1:], 'h', ['help', 'dot=', 'seed=', 'all', 'method=', 'trials=', 'tikz-bipartite=', 'tikz-contraction=', 'desc=', 'stats-in-fig'])
+        opts, args = getopt.getopt( argv[1:], 'h', ['help', 'dot=', 'seed=', 'all', 'method=', 'trials=', 'tikz-bipartite=', 'tikz-contraction=', 'desc=', 'stats-in-fig', 'inc='])
     except getopt.error, msg:
         print msg
         print "for help use --help"
@@ -109,6 +128,8 @@ def main(argv):
             num_trials = int(a)
         elif o == '--stats-in-fig':
             stats_in_fig = True
+        elif o == '--inc':
+            inc_str = a
         elif o == '--method':
             method = a
             if not method in ['config', 'greedy', 'matching']:
@@ -129,7 +150,14 @@ def main(argv):
             nodes = int(args[1])
             deg = int(args[2])
 
-            G, s = find_best(vranks, nodes, deg, num_trials, dotfile, method=method)
+            squash = vranks / nodes
+            assert (vranks % nodes) == 0
+            if not inc_str is None:
+                inc = unpack_inc_str(inc_str, vranks, nodes, deg, squash)
+            else:
+                inc = None
+
+            G, s = find_best(vranks, nodes, deg, num_trials, dotfile, method=method, inc=inc)
         if tikz_bipartite:
             write_tikz.write_bipartite(G, tikz_bipartite, stats_in_fig)
         if tikz_contraction:
