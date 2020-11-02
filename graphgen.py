@@ -144,22 +144,10 @@ def main(argv):
         squash = 2
         deg = 2   # Only degree 2 implemented
         vv = list(range(6,25, squash))
-        for vranks in vv:
-            nodes = vranks / squash
-            for x in range(2, 1+int(nodes/2)):
-                inc = [ [1], [x] ]
-                print inc
-                G, s = find_best(vranks, nodes, deg, num_trials, dotfile, method=method, inc=inc)
-                num_cycles = solve.calc_num_cycles(G, max_len=8)
-                vertex_iso, worst = solve.vertex_isoperimetric(G)
-                vals[ (vranks,x) ] = (num_cycles[4], num_cycles[6], num_cycles[8], vertex_iso)
+        #vv = list(range(26,28, squash))
 
-        print 'Vranks' + (' ' * 4 * nodes) + 'Increment'
-        print '     ',
-        for k,x in enumerate(range(2,nodes)):
-            print '     %3d    ' % x,
-        print
-        for vranks in vv:
+
+        def print_row(vranks):
             max_inc = 1+int(vranks/squash/2) # max_inc + 1
             for k,x in enumerate(range(2, max_inc)):
                 if k == 0:
@@ -178,6 +166,26 @@ def main(argv):
                 print '    %5.3f  ' % iso,
             print
             print
+
+
+        for vranks in vv:
+            nodes = vranks / squash
+            for x in range(2, 1+int(nodes/2)):
+                inc = [ [1], [x] ]
+                print inc
+                G, s = find_best(vranks, nodes, deg, num_trials, dotfile, method=method, inc=inc)
+                num_cycles = solve.calc_num_cycles(G, max_len=8)
+                vertex_iso, worst = solve.vertex_isoperimetric(G)
+                vals[ (vranks,x) ] = (num_cycles[4], num_cycles[6], num_cycles[8], vertex_iso)
+            print_row(vranks)
+
+        print 'Vranks' + (' ' * 4 * nodes) + 'Increment'
+        print '     ',
+        for k,x in enumerate(range(2,nodes)):
+            print '     %3d    ' % x,
+        print
+        for vranks in vv:
+            print_row(vranks)
 
     elif not doall_configs:
         if desc:
