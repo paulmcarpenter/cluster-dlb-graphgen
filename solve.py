@@ -463,7 +463,7 @@ def calc_num_cycles(G):
     # Each cycle of length r is counted 2r times by the above algorithm
     # (from each starting point and in each direction).
     ret_cycles = {}
-    for length, count in num_cycles.items():
+    for length, count in sorted(num_cycles.items()):
         assert (count % (2*length)) == 0
         ret_cycles[length] = count / (2*length)
         print 'Num. cycles of length', length, 'is', ret_cycles[length]

@@ -164,6 +164,7 @@ def main(argv):
             write_tikz.write_contraction(G, tikz_contraction, stats_in_fig)
         print 'export NANOS6_CLUSTER_SPLIT="%s"' % s
         solve.calc_num_cycles(G)
+        print 'vertex isoperimetric number:', solve.vertex_isoperimetric(G)
 
     else:
         if desc is not None:
