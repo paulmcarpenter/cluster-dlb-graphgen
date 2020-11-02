@@ -16,15 +16,28 @@ num_nodes = None
 squash = None
 degree = None
 
-def subsets(l):
-    assert len(l) > 0
-    if len(l) == 1:
-        yield []
-        yield [l[0]]
-    else:
-        for vv in subsets(l[1:]):
-            yield vv
-            yield [l[0]] + vv
+def subsets(items, max_len, all_nodes):
+    def sub(items_left, num_items_left, free_space): 
+        if free_space == 0:
+            # free space, vranks, nodes
+            yield 0, [], []
+        else:
+            if num_items_left == 1:
+                yield free_space, [], []
+                vrank = items_left[0]
+                yield free_space-1, [vrank], all_nodes[vrank]
+            else:
+                for free2, vv, nodes in sub(items_left[1:], num_items_left -1, free_space):
+                    yield free2, vv, nodes
+                    if free2 > 0:
+                        new_nodes = copy.copy(nodes)
+                        vrank = items_left[0]
+                        for node in all_nodes[vrank]:
+                            if not node in new_nodes:
+                                new_nodes.append(node)
+                        yield free2-1, [vrank] + vv, new_nodes
+
+    return sub(items, len(items), max_len)
 
 
 def random_permutation(n):
@@ -391,23 +404,26 @@ def vertex_isoperimetric(G):
     m = n * squash
     deg = degree
 
-    nodes = {}
+    all_nodes = {}
     for i in range(0,m):
-        nodes[i] = []
+        all_nodes[i] = []
         for j in range(0,n):
             if G.has_edge(vrank(i), node(j)):
-                nodes[i].append(j)
+                all_nodes[i].append(j)
 
     iso = 100000
     worst = None
-    for sub in subsets( list(range(0,m) )):
-        if len(sub) > 0 and len(sub) <= n:
-            nn = []
-            for v in sub:
-                for j in nodes[v]:
-                    if not j in nn:
-                        nn.append(j)
-            val = len(nn) * 1.0 / len(sub)
+    for ignore, sub, nodes in subsets( list(range(0,m)), n, all_nodes):
+        #assert len(sub) <= n
+        if len(sub) > 0:
+            #nn = []
+            #for v in sub:
+            #    for j in all_nodes[v]:
+            #        if not j in nn:
+            #            nn.append(j)
+            #assert len(nn) == len(nodes)
+            #assert sorted(nodes) == sorted(nn)
+            val = len(nodes) * 1.0 / len(sub)
             if val < iso:
                 worst = sub
             iso = min(iso, val)
