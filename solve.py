@@ -1,4 +1,5 @@
 #! /usr/bin/env python # -*- coding: utf-8 -*-
+import array
 import random
 import copy
 import math
@@ -16,8 +17,7 @@ num_nodes = None
 squash = None
 degree = None
 
-def subsets(items, max_len, all_nodes, assume_regular):
-    num_all_nodes = len(all_nodes)
+def subsets(items, max_len, all_nodes, num_all_nodes, assume_regular):
 
     def sub(items_left, num_items_left, free_space): 
         if free_space == 0:
@@ -432,7 +432,7 @@ def vertex_isoperimetric(G, assume_regular=False):
 
     iso = 1.0
     worst = list(range(0,n))
-    for free, sub, nodes, num_n in subsets( list(range(0,m)), n, all_nodes, assume_regular):
+    for free, sub, nodes, num_n in subsets( list(range(0,m)), n, all_nodes, n, assume_regular):
         size = n - free
         if size > 0:
             val = num_n * 1.0 / size
