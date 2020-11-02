@@ -16,11 +16,13 @@ void sub(node_bitmask_t *adj, node_bitmask_t nodes_used, int vranks_used, int to
         float val = 1.0 * num_n / vranks_used;
         if (val < iso) {
             iso = val;
+#if 0
             printf("Used vranks: %d are ", vranks_used);
             for(int i=0; i<vranks_used; i++) {
                 printf("%d ", buf[i]);
             }
             printf(";  nodes %llx num_nodes: %d val: %f\n", nodes_used, num_n, val);
+#endif
         }
     }
     if (num_n < num_all_nodes && vranks_used < num_all_nodes) {
@@ -65,12 +67,12 @@ int main(int argc, char **argv)
     }
     num_vranks += 1;
     for (int vrank=0; vrank < num_vranks; vrank++) {
-        printf("Vrank %d: adjacency 0x%llx\n", vrank, adj[vrank]);
+        // printf("Vrank %d: adjacency 0x%llx\n", vrank, adj[vrank]);
         // printf("%d\n", __builtin_popcount(adj[vrank]));
     }
 
-    printf("Number of nodes: %d\n", num_nodes);
-    printf("Number of vranks: %d\n", num_vranks);
+    // printf("Number of nodes: %d\n", num_nodes);
+    // printf("Number of vranks: %d\n", num_vranks);
 
     // Start with first vrank
     node_bitmask_t nodes_used = adj[0];

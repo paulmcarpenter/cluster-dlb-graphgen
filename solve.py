@@ -11,6 +11,8 @@ from networkx.drawing.nx_pydot import write_dot
 import scipy.stats
 import rebalance
 import time
+import os
+import subprocess
 
 num_vranks = None
 num_nodes = None
@@ -408,13 +410,42 @@ def evaluate_graph(G, n, sq, deg, samples=100):
 
     return numpy.mean(imbs), numpy.std(imbs)
 
+def graph_to_nanos_string(G):
+
+    #assert n == solve.num_nodes
+    #assert squash == solve.squash
+    #assert deg == solve.degree
+
+    desc = []
+
+    for g in range(0,num_nodes * squash):
+        gdesc = []
+        # Master of group g should be on node g if possible
+        if G.has_edge( vrank(g), node(g//squash)):
+            gdesc.append(g//squash)
+        for j in range(0,num_nodes):
+            if j != g//squash and G.has_edge( vrank(g), node(j)):
+                gdesc.append(j)
+        desc.append(gdesc)
+
+    return ';'.join([ ','.join([str(e) for e in gdesc]) for gdesc in desc])
+
 def vertex_isoperimetric(G, assume_regular=False):
+
     # Calculate minimum value of number of nodes / number of vranks
     global num_nodes
     global degree
     n = num_nodes
     m = n * squash
     deg = degree
+
+    if assume_regular:
+        # Use the C code
+        calc_iso = os.path.dirname(os.path.realpath(__file__)) + '/calc_iso'
+        desc = graph_to_nanos_string(G)
+        p1 = subprocess.Popen([calc_iso, desc], stdout=subprocess.PIPE)
+        output = float(p1.communicate()[0])
+        return output, None
 
     all_nodes = {}
     for i in range(0,m):

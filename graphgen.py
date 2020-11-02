@@ -143,10 +143,10 @@ def main(argv):
         vals = {}
         squash = 2
         deg = 2   # Only degree 2 implemented
-        vv = list(range(6,21, squash))
-        #vv = list(range(22,24, squash))
-        #vv = list(range(30,32, squash))
-
+        vv = list(range(30,32, squash))
+        #vv = list(range(6,21, squash))
+        #vv = list(range(28,30, squash))
+        #vv = list(range(32,34, squash))
 
         def print_row(vranks):
             max_inc = 1+int(vranks//squash//2) # max_inc + 1

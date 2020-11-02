@@ -1,2 +1,2 @@
 calc_iso:calc_iso.c
-	gcc -o $@ $<
+	gcc -O3 -o $@ $<
