@@ -17,52 +17,39 @@ num_nodes = None
 squash = None
 degree = None
 
-def subsets(items, max_len, all_nodes, num_all_nodes, assume_regular):
+def foreach_subset(items, max_len, all_nodes, num_all_nodes, func, assume_regular):
+    num_all_items = len(items)
 
-    def sub(items_left, num_items_left, free_space): 
-        if free_space == 0:
-            # free space, vranks, nodes, num_nodes
-            nn = array.array('H', [False] * num_all_nodes)
-            yield 0, [], nn, 0
-        else:
-            if num_items_left == 1:
-                nn = array.array('H', [False] * num_all_nodes)
-                yield free_space, [], nn, 0
-                vrank = items_left[0]
-                num_n = 0
-                for node in all_nodes[vrank]:
-                    nn[node] = True
-                    num_n += 1
-                yield free_space-1, [vrank], nn, num_n
-            else:
-                for free2, vv, nodes, num_n in sub(items_left[1:], num_items_left -1, free_space):
-                    yield free2, vv, nodes, num_n
-                    # If already has all the nodes, do not need to add more (it won't reduce the
-                    # vertex isoperimetric number)
-                    if free2 > 0 and num_n < num_all_nodes:
-                        new_nodes = copy.copy(nodes)
-                        vrank = items_left[0]
-                        for node in all_nodes[vrank]:
-                            if not new_nodes[node]:
-                                new_nodes[node] = True
-                                num_n += 1
-                        yield free2-1, [vrank] + vv, new_nodes, num_n
+    def sub(nodes, num_n, vranks, num_vranks, items_left, num_items_left, free_space): 
 
-    def sub_with_first(items_left, num_items_left, free_space):
-        # Always include first vrank
-        for free2, vv, nodes, num_n in sub(items_left[1:], num_items_left-1, free_space-1):
-            new_nodes = copy.copy(nodes)
-            vrank = items_left[0]
-            for node in all_nodes[vrank]:
-                if not new_nodes[node]:
-                    new_nodes[node] = True
-                    num_n += 1
-            yield free2, [vrank] + vv, new_nodes, num_n
+        # Call the function with the current subset
+        func(vranks, num_vranks, nodes, num_n)
+        if num_n < num_all_nodes:
+            # Worth adding more vranks as do not yet have all the nodes
 
+            if free_space > 0 and num_items_left > 0:
+
+                # Choose the next item to add
+                for j in range(0, num_items_left):
+                    new_nodes = copy.copy(nodes)
+                    new_num_n = num_n
+                    vrank = items_left[j]
+                    for node in all_nodes[vrank]:
+                        if not new_nodes[node]:
+                            new_nodes[node] = True
+                            new_num_n += 1
+                    sub(new_nodes, new_num_n, [vrank] + vranks, num_vranks+1, items_left[j+1:], num_items_left -j-1, free_space-1)
+
+    nn = array.array('B', [False] * num_all_nodes)
     if assume_regular:
-        return sub_with_first(items, len(items), max_len)
+        vrank = items[0]
+        num_n = 0
+        for node in all_nodes[vrank]:
+            nn[node] = True
+            num_n += 1
+        return sub(nn, num_n, [vrank], 1, items[1:], len(items)-1, max_len-1)
     else:
-        return sub(items, len(items), max_len)
+        return sub(nn, 0, [], 0, items, len(items), max_len)
 
 
 def random_permutation(n):
@@ -436,16 +423,18 @@ def vertex_isoperimetric(G, assume_regular=False):
             if G.has_edge(vrank(i), node(j)):
                 all_nodes[i].append(j)
 
-    iso = 1.0
-    worst = list(range(0,n))
-    for free, sub, nodes, num_n in subsets( list(range(0,m)), n, all_nodes, n, assume_regular):
-        size = n - free
+    iso = [1.0, list(range(0,n))]
+
+    def process_subset(sub, size, nodes, num_n):
+        #print('Process subset', sub, 'on', nodes, 'size', size, 'num_n', num_n)
         if size > 0:
             val = num_n * 1.0 / size
-            if val < iso:
-                worst = sub
-            iso = min(iso, val)
-    return iso, worst
+            if val < iso[0]:
+                iso[1] = sub
+                iso[0] = val
+
+    foreach_subset(list(range(0,m)), n, all_nodes, n, process_subset, assume_regular)
+    return iso[0], iso[1]
 
 
 def calc_num_cycles(G, max_len=50):
