@@ -14,7 +14,7 @@ import write_tikz
 
 def Usage(argv):
     print argv[0], '   <#vranks>  <#nodes>  <degree>'
-    print '   --all               Create all topologies'
+    print '   --all-configs       Create topologies for all configs'
     print '   --help              Show this help'
     print '   --desc desc         Provide description as per NANOS6_CLUSTER_SPLIT'
     print '   --dot dotfile       Generate a .dot file'
@@ -97,14 +97,14 @@ def main(argv):
     tikz_bipartite = None
     tikz_contraction = None
     seed = 1
-    doall = False
+    doall_configs = False
     method = 'matching'
     num_trials =1
     desc = None
     stats_in_fig = False
     inc_str = None
     try:
-        opts, args = getopt.getopt( argv[1:], 'h', ['help', 'dot=', 'seed=', 'all', 'method=', 'trials=', 'tikz-bipartite=', 'tikz-contraction=', 'desc=', 'stats-in-fig', 'inc='])
+        opts, args = getopt.getopt( argv[1:], 'h', ['help', 'dot=', 'seed=', 'all-configs', 'method=', 'trials=', 'tikz-bipartite=', 'tikz-contraction=', 'desc=', 'stats-in-fig', 'inc='])
     except getopt.error, msg:
         print msg
         print "for help use --help"
@@ -122,8 +122,8 @@ def main(argv):
             tikz_contraction = a
         elif o == '--seed':
             seed = int(a)
-        elif o == '--all':
-            doall = True
+        elif o == '--all-configs':
+            doall_configs = True
         elif o == '--trials':
             num_trials = int(a)
         elif o == '--stats-in-fig':
@@ -136,7 +136,7 @@ def main(argv):
                 return Usage(argv)
     random.seed(seed)
 
-    if not doall:
+    if not doall_configs:
         if desc:
             G = make_graph.make_from_desc(desc)
             s = desc
@@ -168,7 +168,7 @@ def main(argv):
 
     else:
         if desc is not None:
-            print 'Cannot use --desc and --do-all'
+            print 'Cannot use --desc and --all-configs'
             return 1
         assert dotfile is None
 
