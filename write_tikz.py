@@ -166,3 +166,40 @@ def write_contraction(G, tikzfile, stats_in_fig):
 
     print >> fp, r'\end{tikzpicture}'
     fp.close()
+
+
+def write_bipartite(G, tikzfile, stats_in_fig):
+    n = solve.num_nodes
+    squash = solve.squash
+    m = n * squash
+    deg = solve.degree
+
+    fp = open(tikzfile, 'w')
+    print >> fp, r'\begin{tikzpicture}[inner sep=2mm]'
+
+    # Draw the vranks
+    sp = 2.5
+    for j in range(0,m):
+        x = 0
+        y = -sp * j
+        print >> fp, r'\node[vrank] (vrank%d) at (%5.3f, %5.3f) { \bf Vrank %d };' % (j, x, y, j);
+
+    # Draw the nodes
+    ofs = (m - n) * sp / 2.0
+    for j in range(0,n):
+        x = 5
+        y = -ofs - sp * j
+        print >> fp, r'\node[node] (node%d) at (%5.3f, %5.3f) { \bf Node %d };' % (j, x, y, j);
+
+    # Draw the edges
+    for i in range(0,m):
+        for j in range(0,n):
+            if G.has_edge(solve.vrank(i), solve.node(j)):
+                if j == int(i/squash):
+                    emph = '[line width=1mm]'
+                else:
+                    emph = ''
+                print >> fp, r'\draw%s (vrank%d) -- (node%d.west);' % (emph, i, j)
+
+    print >> fp, r'\end{tikzpicture}'
+    fp.close()

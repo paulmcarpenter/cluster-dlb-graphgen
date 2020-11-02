@@ -15,6 +15,7 @@ def make_from_desc(desc):
     solve.num_vranks = num_vranks
     solve.num_nodes = num_nodes
     solve.squash = num_vranks / num_nodes
+    assert (num_vranks % num_nodes) == 0
 
     G = networkx.Graph()
     for j in range(0,num_vranks):
