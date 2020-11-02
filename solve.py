@@ -22,12 +22,18 @@ def subsets(items, max_len, all_nodes, num_all_nodes, assume_regular):
     def sub(items_left, num_items_left, free_space): 
         if free_space == 0:
             # free space, vranks, nodes, num_nodes
-            yield 0, [], [], 0
+            nn = array.array('H', [False] * num_all_nodes)
+            yield 0, [], nn, 0
         else:
             if num_items_left == 1:
-                yield free_space, [], [], 0
+                nn = array.array('H', [False] * num_all_nodes)
+                yield free_space, [], nn, 0
                 vrank = items_left[0]
-                yield free_space-1, [vrank], all_nodes[vrank], len(all_nodes[vrank])
+                num_n = 0
+                for node in all_nodes[vrank]:
+                    nn[node] = True
+                    num_n += 1
+                yield free_space-1, [vrank], nn, num_n
             else:
                 for free2, vv, nodes, num_n in sub(items_left[1:], num_items_left -1, free_space):
                     yield free2, vv, nodes, num_n
@@ -37,8 +43,8 @@ def subsets(items, max_len, all_nodes, num_all_nodes, assume_regular):
                         new_nodes = copy.copy(nodes)
                         vrank = items_left[0]
                         for node in all_nodes[vrank]:
-                            if not node in new_nodes:
-                                new_nodes.append(node)
+                            if not new_nodes[node]:
+                                new_nodes[node] = True
                                 num_n += 1
                         yield free2-1, [vrank] + vv, new_nodes, num_n
 
@@ -48,8 +54,8 @@ def subsets(items, max_len, all_nodes, num_all_nodes, assume_regular):
             new_nodes = copy.copy(nodes)
             vrank = items_left[0]
             for node in all_nodes[vrank]:
-                if not node in new_nodes:
-                    new_nodes.append(node)
+                if not new_nodes[node]:
+                    new_nodes[node] = True
                     num_n += 1
             yield free2, [vrank] + vv, new_nodes, num_n
 
