@@ -144,7 +144,8 @@ def main(argv):
         squash = 2
         deg = 2   # Only degree 2 implemented
         vv = list(range(6,25, squash))
-        #vv = list(range(26,28, squash))
+        #vv = list(range(22,24, squash))
+        #vv = list(range(30,32, squash))
 
 
         def print_row(vranks):
@@ -175,7 +176,7 @@ def main(argv):
                 print inc
                 G, s = find_best(vranks, nodes, deg, num_trials, dotfile, method=method, inc=inc)
                 num_cycles = solve.calc_num_cycles(G, max_len=8)
-                vertex_iso, worst = solve.vertex_isoperimetric(G)
+                vertex_iso, worst = solve.vertex_isoperimetric(G, True)
                 vals[ (vranks,x) ] = (num_cycles[4], num_cycles[6], num_cycles[8], vertex_iso)
             print_row(vranks)
 

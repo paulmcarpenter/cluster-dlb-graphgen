@@ -16,7 +16,9 @@ num_nodes = None
 squash = None
 degree = None
 
-def subsets(items, max_len, all_nodes):
+def subsets(items, max_len, all_nodes, assume_regular):
+    num_all_nodes = len(all_nodes)
+
     def sub(items_left, num_items_left, free_space): 
         if free_space == 0:
             # free space, vranks, nodes, num_nodes
@@ -29,7 +31,9 @@ def subsets(items, max_len, all_nodes):
             else:
                 for free2, vv, nodes, num_nodes in sub(items_left[1:], num_items_left -1, free_space):
                     yield free2, vv, nodes, num_nodes
-                    if free2 > 0:
+                    # If already has all the nodes, do not need to add more (it won't reduce the
+                    # vertex isoperimetric number)
+                    if free2 > 0 and num_nodes < num_all_nodes:
                         new_nodes = copy.copy(nodes)
                         vrank = items_left[0]
                         for node in all_nodes[vrank]:
@@ -38,7 +42,21 @@ def subsets(items, max_len, all_nodes):
                                 num_nodes += 1
                         yield free2-1, [vrank] + vv, new_nodes, num_nodes
 
-    return sub(items, len(items), max_len)
+    def sub_with_first(items_left, num_items_left, free_space):
+        # Always include first vrank
+        for free2, vv, nodes, num_nodes in sub(items_left[1:], num_items_left-1, free_space-1):
+            new_nodes = copy.copy(nodes)
+            vrank = items_left[0]
+            for node in all_nodes[vrank]:
+                if not node in new_nodes:
+                    new_nodes.append(node)
+                    num_nodes += 1
+            yield free2, [vrank] + vv, new_nodes, num_nodes
+
+    if assume_regular:
+        return sub_with_first(items, len(items), max_len)
+    else:
+        return sub(items, len(items), max_len)
 
 
 def random_permutation(n):
@@ -397,7 +415,7 @@ def evaluate_graph(G, n, sq, deg, samples=100):
 
     return numpy.mean(imbs), numpy.std(imbs)
 
-def vertex_isoperimetric(G):
+def vertex_isoperimetric(G, assume_regular):
     # Calculate minimum value of number of nodes / number of vranks
     global num_nodes
     global degree
@@ -414,7 +432,7 @@ def vertex_isoperimetric(G):
 
     iso = 100000
     worst = None
-    for free, sub, nodes, num_nodes in subsets( list(range(0,m)), n, all_nodes):
+    for free, sub, nodes, num_nodes in subsets( list(range(0,m)), n, all_nodes, assume_regular):
         size = n - free
         if size > 0:
             val = num_nodes * 1.0 / size
