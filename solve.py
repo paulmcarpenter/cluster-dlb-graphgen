@@ -19,23 +19,24 @@ degree = None
 def subsets(items, max_len, all_nodes):
     def sub(items_left, num_items_left, free_space): 
         if free_space == 0:
-            # free space, vranks, nodes
-            yield 0, [], []
+            # free space, vranks, nodes, num_nodes
+            yield 0, [], [], 0
         else:
             if num_items_left == 1:
-                yield free_space, [], []
+                yield free_space, [], [], 0
                 vrank = items_left[0]
-                yield free_space-1, [vrank], all_nodes[vrank]
+                yield free_space-1, [vrank], all_nodes[vrank], len(all_nodes[vrank])
             else:
-                for free2, vv, nodes in sub(items_left[1:], num_items_left -1, free_space):
-                    yield free2, vv, nodes
+                for free2, vv, nodes, num_nodes in sub(items_left[1:], num_items_left -1, free_space):
+                    yield free2, vv, nodes, num_nodes
                     if free2 > 0:
                         new_nodes = copy.copy(nodes)
                         vrank = items_left[0]
                         for node in all_nodes[vrank]:
                             if not node in new_nodes:
                                 new_nodes.append(node)
-                        yield free2-1, [vrank] + vv, new_nodes
+                                num_nodes += 1
+                        yield free2-1, [vrank] + vv, new_nodes, num_nodes
 
     return sub(items, len(items), max_len)
 
@@ -413,17 +414,10 @@ def vertex_isoperimetric(G):
 
     iso = 100000
     worst = None
-    for ignore, sub, nodes in subsets( list(range(0,m)), n, all_nodes):
-        #assert len(sub) <= n
-        if len(sub) > 0:
-            #nn = []
-            #for v in sub:
-            #    for j in all_nodes[v]:
-            #        if not j in nn:
-            #            nn.append(j)
-            #assert len(nn) == len(nodes)
-            #assert sorted(nodes) == sorted(nn)
-            val = len(nodes) * 1.0 / len(sub)
+    for free, sub, nodes, num_nodes in subsets( list(range(0,m)), n, all_nodes):
+        size = n - free
+        if size > 0:
+            val = num_nodes * 1.0 / size
             if val < iso:
                 worst = sub
             iso = min(iso, val)
