@@ -22,6 +22,7 @@ def Usage(argv):
     print '   --tikz-contraction  Generate a tikz script for contraction graph'
     print '   --seed s            Random seed'
     print '   --method m          Method: config, greedy or matching'
+    print '   --stats-in-fig      Include statistics in the figure'
 
 def graph_to_nanos_string(n, squash, deg, G):
 
@@ -82,8 +83,9 @@ def main(argv):
     method = 'matching'
     num_trials =1
     desc = None
+    stats_in_fig = False
     try:
-        opts, args = getopt.getopt( argv[1:], 'h', ['help', 'dot=', 'seed=', 'all', 'method=', 'trials=', 'tikz-bipartite=', 'tikz-contraction=', 'desc='])
+        opts, args = getopt.getopt( argv[1:], 'h', ['help', 'dot=', 'seed=', 'all', 'method=', 'trials=', 'tikz-bipartite=', 'tikz-contraction=', 'desc=', 'stats-in-fig'])
     except getopt.error, msg:
         print msg
         print "for help use --help"
@@ -105,6 +107,8 @@ def main(argv):
             doall = True
         elif o == '--trials':
             num_trials = int(a)
+        elif o == '--stats-in-fig':
+            stats_in_fig = True
         elif o == '--method':
             method = a
             if not method in ['config', 'greedy', 'matching']:
@@ -127,9 +131,9 @@ def main(argv):
 
             G, s = find_best(vranks, nodes, deg, num_trials, dotfile, method=method)
         if tikz_bipartite:
-            write_tikz.write_bipartite(G, tikz_bipartite)
+            write_tikz.write_bipartite(G, tikz_bipartite, stats_in_fig)
         if tikz_contraction:
-            write_tikz.write_contraction(G, tikz_contraction)
+            write_tikz.write_contraction(G, tikz_contraction, stats_in_fig)
         print 'export NANOS6_CLUSTER_SPLIT="%s"' % s
 
     else:

@@ -45,7 +45,7 @@ def vertex_isoperimetric(G):
 
 
 
-def write_contraction(G, tikzfile):
+def write_contraction(G, tikzfile, stats_in_fig):
     n = solve.num_nodes
     squash = solve.squash
     m = n * squash
@@ -143,33 +143,26 @@ def write_contraction(G, tikzfile):
                                     #print 'd', a,b,c,e
 
 
-    print >> fp, r'\node at (%5.3f,%5.3f) { \bf %d vranks on %d nodes, degree %d};' % (0, radius + 2.0, m, n, deg)
+    if stats_in_fig:
+        print >> fp, r'\node at (%5.3f,%5.3f) { \bf %d vranks on %d nodes, degree %d};' % (0, radius + 2.0, m, n, deg)
 
-    spacing = 0.5
-    ym = -radius - 2.0
-    print >> fp, r'\node at (%5.3f,%5.3f) { Number of vranks: %d};' % (0, ym, m)
-    ym -= spacing
-    print >> fp, r'\node at (%5.3f,%5.3f) { Number of nodes: %d};' % (0, ym, n)
-    ym -= spacing
-    print >> fp, r'\node at (%5.3f,%5.3f) { Degree: %d};' % (0, ym, deg)
-    ym -= spacing
-    print >> fp, r'\node at (%5.3f,%5.3f) { Num 4-cycles (parallel vranks): %d};' % (0, ym, num_4cycles)
-    ym -= spacing
-    print >> fp, r'\node at (%5.3f,%5.3f) { Num 6-cycles: %d};' % (0, ym, num_6cycles / 3)
-    ym -= spacing
-    print >> fp, r'\node at (%5.3f,%5.3f) { Num 8-cycles: %d};' % (0, ym, num_8cycles / 4)
-    ym -= spacing
-    iso, worst = vertex_isoperimetric(G)
-    worst = ' '.join([str(v) for v in worst])
-    print >> fp, r'\node at (%5.3f,%5.3f) { Vertex isoperimetric number: %5.3f for %s};' % (0, ym, iso, worst)
-
-
-
-
-        # gdesc = []
-        # # Master of group g should be on node g if possible
-        # if G.has_edge( solve.vrank(g), solve.node(g/squash)):
-        #     gdesc.append(g/squash)
+        spacing = 0.5
+        ym = -radius - 2.0
+        print >> fp, r'\node at (%5.3f,%5.3f) { Number of vranks: %d};' % (0, ym, m)
+        ym -= spacing
+        print >> fp, r'\node at (%5.3f,%5.3f) { Number of nodes: %d};' % (0, ym, n)
+        ym -= spacing
+        print >> fp, r'\node at (%5.3f,%5.3f) { Degree: %d};' % (0, ym, deg)
+        ym -= spacing
+        print >> fp, r'\node at (%5.3f,%5.3f) { Num 4-cycles (parallel vranks): %d};' % (0, ym, num_4cycles)
+        ym -= spacing
+        print >> fp, r'\node at (%5.3f,%5.3f) { Num 6-cycles: %d};' % (0, ym, num_6cycles / 3)
+        ym -= spacing
+        print >> fp, r'\node at (%5.3f,%5.3f) { Num 8-cycles: %d};' % (0, ym, num_8cycles / 4)
+        ym -= spacing
+        iso, worst = vertex_isoperimetric(G)
+        worst = ' '.join([str(v) for v in worst])
+        print >> fp, r'\node at (%5.3f,%5.3f) { Vertex isoperimetric number: %5.3f for %s};' % (0, ym, iso, worst)
 
     print >> fp, r'\end{tikzpicture}'
     fp.close()
