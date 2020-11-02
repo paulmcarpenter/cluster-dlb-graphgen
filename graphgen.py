@@ -98,13 +98,14 @@ def main(argv):
     tikz_contraction = None
     seed = 1
     doall_configs = False
+    doall_inc = False
     method = 'matching'
     num_trials =1
     desc = None
     stats_in_fig = False
     inc_str = None
     try:
-        opts, args = getopt.getopt( argv[1:], 'h', ['help', 'dot=', 'seed=', 'all-configs', 'method=', 'trials=', 'tikz-bipartite=', 'tikz-contraction=', 'desc=', 'stats-in-fig', 'inc='])
+        opts, args = getopt.getopt( argv[1:], 'h', ['help', 'dot=', 'seed=', 'all-configs', 'method=', 'trials=', 'tikz-bipartite=', 'tikz-contraction=', 'desc=', 'stats-in-fig', 'inc=', 'all-inc'])
     except getopt.error, msg:
         print msg
         print "for help use --help"
@@ -124,6 +125,8 @@ def main(argv):
             seed = int(a)
         elif o == '--all-configs':
             doall_configs = True
+        elif o == '--all-inc':
+            doall_inc = True
         elif o == '--trials':
             num_trials = int(a)
         elif o == '--stats-in-fig':
@@ -136,7 +139,47 @@ def main(argv):
                 return Usage(argv)
     random.seed(seed)
 
-    if not doall_configs:
+    if doall_inc:
+        vals = {}
+        squash = 2
+        deg = 2   # Only degree 2 implemented
+        vv = list(range(6,25, squash))
+        for vranks in vv:
+            nodes = vranks / squash
+            for x in range(2, 1+int(nodes/2)):
+                inc = [ [1], [x] ]
+                print inc
+                G, s = find_best(vranks, nodes, deg, num_trials, dotfile, method=method, inc=inc)
+                num_cycles = solve.calc_num_cycles(G, max_len=8)
+                vertex_iso, worst = solve.vertex_isoperimetric(G)
+                vals[ (vranks,x) ] = (num_cycles[4], num_cycles[6], num_cycles[8], vertex_iso)
+
+        print 'Vranks' + (' ' * 4 * nodes) + 'Increment'
+        print '     ',
+        for k,x in enumerate(range(2,nodes)):
+            print '     %3d    ' % x,
+        print
+        for vranks in vv:
+            max_inc = 1+int(vranks/squash/2) # max_inc + 1
+            for k,x in enumerate(range(2, max_inc)):
+                if k == 0:
+                    print '%2d: ' % vranks,
+                else:
+                    print '',
+                n4, n6, n8, iso = vals[ (vranks,x)]
+                print '%3d %3d %3d' % (n4, n6, n8),
+            print
+            for k,x in enumerate(range(2, max_inc)):
+                if k == 0:
+                    print '   ',
+                else:
+                    print '',
+                n4, n6, n8, iso = vals[ (vranks,x)]
+                print '    %5.3f  ' % iso,
+            print
+            print
+
+    elif not doall_configs:
         if desc:
             G = make_graph.make_from_desc(desc)
             s = desc

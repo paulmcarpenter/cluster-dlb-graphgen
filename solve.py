@@ -270,7 +270,7 @@ def generate_random_bipartite(n, sq, deg, seed, method = 'matching', inverted = 
 
     # Use a memo so reuse graph for (n,deg,seed)
     global memo_graphs
-    key = (n,squash,deg,seed)
+    key = (n,squash,deg,seed, str(inc))
     if key in memo_graphs:
         return memo_graphs[key]
 
@@ -414,7 +414,7 @@ def vertex_isoperimetric(G):
     return iso, worst
 
 
-def calc_num_cycles(G):
+def calc_num_cycles(G, max_len=50):
     # cycle_basis only works for non-decorated graph?
     global num_vranks
     global num_nodes
@@ -454,7 +454,8 @@ def calc_num_cycles(G):
             elif j in indices:
                 pass # print 'Already visited', j, 'in', indices, ': ignore'
             else:
-                build_cycle(indices + [j], j, start, length+1)
+                if length < max_len:
+                    build_cycle(indices + [j], j, start, length+1)
         
     # Start at each starting place
     for i in range(0,num_vranks + num_nodes):
