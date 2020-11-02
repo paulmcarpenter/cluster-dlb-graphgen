@@ -163,6 +163,7 @@ def main(argv):
         if tikz_contraction:
             write_tikz.write_contraction(G, tikz_contraction, stats_in_fig)
         print 'export NANOS6_CLUSTER_SPLIT="%s"' % s
+        solve.calc_num_cycles(G)
 
     else:
         if desc is not None:

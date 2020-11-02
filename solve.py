@@ -16,6 +16,16 @@ num_nodes = None
 squash = None
 degree = None
 
+def subsets(l):
+    assert len(l) > 0
+    if len(l) == 1:
+        yield []
+        yield [l[0]]
+    else:
+        for vv in subsets(l[1:]):
+            yield vv
+            yield [l[0]] + vv
+
 
 def random_permutation(n):
     """Return a random permutation of n as a list"""
@@ -372,4 +382,100 @@ def evaluate_graph(G, n, sq, deg, samples=100):
             imbs.append(imb)
 
     return numpy.mean(imbs), numpy.std(imbs)
+
+def vertex_isoperimetric(G):
+    # Calculate minimum value of number of nodes / number of vranks
+    global num_nodes
+    global degree
+    n = num_nodes
+    m = n * squash
+    deg = degree
+
+    nodes = {}
+    for i in range(0,m):
+        nodes[i] = []
+        for j in range(0,n):
+            if G.has_edge(vrank(i), node(j)):
+                nodes[i].append(j)
+
+    iso = 100000
+    worst = None
+    for sub in subsets( list(range(0,m) )):
+        if len(sub) > 0 and len(sub) <= n:
+            nn = []
+            for v in sub:
+                for j in nodes[v]:
+                    if not j in nn:
+                        nn.append(j)
+            val = len(nn) * 1.0 / len(sub)
+            if val < iso:
+                worst = sub
+            iso = min(iso, val)
+    return iso, worst
+
+
+def calc_num_cycles(G):
+    # cycle_basis only works for non-decorated graph?
+    global num_vranks
+    global num_nodes
+    global squash
+    global degree
+
+    adj = {}
+    def lcl_vrank(i):
+        return i
+    def lcl_node(j):
+        return j + num_vranks
+    for i in range(0,num_vranks):
+        for j in range(0,num_nodes):
+            if G.has_edge(vrank(i), node(j)):
+                a = lcl_vrank(i)
+                b = lcl_node(j)
+                if not a in adj:
+                    adj[a] = [b]
+                else:
+                    adj[a].append(b)
+                if not b in adj:
+                    adj[b] = [a]
+                else:
+                    adj[b].append(a)
+
+    num_cycles = dict([ (r,0) for r in [4,6,8]] )
+
+    def build_cycle(indices, i, start, length):
+        # print 'Build cycle', indices, 'at', i, 'from', start
+        # Now try each neighbour of i
+        for j in adj[i]:
+            # print 'Try next:', j
+            if j == start and length > 2:
+                # Note: length 2 cycle is Vrank ---- Node counting the same instance twice
+                # print 'Found cycle', indices
+                num_cycles[length] = 1+num_cycles.get(length, 0)
+            elif j in indices:
+                pass # print 'Already visited', j, 'in', indices, ': ignore'
+            else:
+                build_cycle(indices + [j], j, start, length+1)
+        
+    # Start at each starting place
+    for i in range(0,num_vranks + num_nodes):
+        build_cycle([i], i, i, 1)
+
+    # Each cycle of length r is counted 2r times by the above algorithm
+    # (from each starting point and in each direction).
+    ret_cycles = {}
+    for length, count in num_cycles.items():
+        assert (count % (2*length)) == 0
+        ret_cycles[length] = count / (2*length)
+        print 'Num. cycles of length', length, 'is', ret_cycles[length]
+
+    return ret_cycles
+
+
+
+
+
+
+
+
+    
 

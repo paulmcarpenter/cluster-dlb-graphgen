@@ -3,46 +3,6 @@ import math
 import copy
 
 
-def subsets(l):
-    assert len(l) > 0
-    if len(l) == 1:
-        yield []
-        yield [l[0]]
-    else:
-        for vv in subsets(l[1:]):
-            yield vv
-            yield [l[0]] + vv
-
-
-def vertex_isoperimetric(G):
-    # Calculate minimum value of number of nodes / number of vranks
-    n = solve.num_nodes
-    squash = solve.squash
-    m = n * squash
-    deg = solve.degree
-
-    nodes = {}
-    for i in range(0,m):
-        nodes[i] = []
-        for j in range(0,n):
-            if G.has_edge(solve.vrank(i), solve.node(j)):
-                nodes[i].append(j)
-
-    iso = 100000
-    worst = None
-    for sub in subsets( list(range(0,m) )):
-        if len(sub) > 0 and len(sub) <= n:
-            nn = []
-            for vrank in sub:
-                for node in nodes[vrank]:
-                    if not node in nn:
-                        nn.append(node)
-            val = len(nn) * 1.0 / len(sub)
-            if val < iso:
-                worst = sub
-            iso = min(iso, val)
-    return iso, worst
-
 
 
 def write_contraction(G, tikzfile, stats_in_fig):
@@ -83,13 +43,13 @@ def write_contraction(G, tikzfile, stats_in_fig):
         else:
             pairs[nodes].append(i)
 
-    num_4cycles = 0
+    num_cycles = solve.calc_num_cycles(G)
+
     for pair, l in pairs.items():
         print pair, l
         ofs = 0.04 * len(l)
         xofs = (y[pair[0]] - y[pair[1]]) * ofs
         yofs = (x[pair[1]] - x[pair[0]]) * ofs
-        num_4cycles += len(l) * (len(l)-1) / 2
         for k, vrank in enumerate(l):
             if pair[0] == int(vrank/squash):
                 a,b = pair[0], pair[1]
@@ -105,50 +65,6 @@ def write_contraction(G, tikzfile, stats_in_fig):
             print >> fp, r'\draw[-triangle 90] (node%d) to (%5.3f,%5.3f) to (node%d);' % (a, xm, ym, b)
             print >> fp, r'\node at (%5.3f,%5.3f) { $v_{%d}$ };' % (xm-yofs*0.2, ym+xofs*0.2, vrank)
 
-    # Find all 6 and 8 cycles
-    num_6cycles = 0
-    num_8cycles = 0
-    for a,b in pp:
-        # Always start with b
-        for c,d in pp:
-            if c == b and d!=a:
-                for e,f in pp:
-                    if d==e:
-                        if f == a:
-                            num_6cycles += 1
-                        elif f != b and f != c and f != d:
-                            for g,h in pp:
-                                if (g == f and h == a) or (h == f and g == a):
-                                    num_8cycles += 1
-                                    #print 'a', a,b,d,f
-                    elif d==f:
-                        if e == a:
-                            num_6cycles += 1
-                        elif e != b and e != c and e != d:
-                            for g,h in pp:
-                                if (g == e and h == a) or (h == e and g == a):
-                                    num_8cycles += 1
-                                    #print 'b', a,b,d,e
-            elif d == b and c!=a:
-                for e,f in pp:
-                    if c==e:
-                        if f == a:
-                            num_6cycles += 1
-                        elif f != b and f != c and f != d:
-                            for g,h in pp:
-                                if (g == f and h == a) or (h == f and g == a):
-                                    num_8cycles += 1
-                                    #print 'c', a,b,c,f
-                    elif c==f:
-                        if e == a:
-                            num_6cycles += 1
-                        elif e != b and e != c and e != d:
-                            for g,h in pp:
-                                if (g == e and h == a) or (h == e and g == a):
-                                    num_8cycles += 1
-                                    #print 'd', a,b,c,e
-
-
     if stats_in_fig:
         # print >> fp, r'\node at (%5.3f,%5.3f) { \bf %d vranks on %d nodes, degree %d};' % (0, radius + 2.0, m, n, deg)
 
@@ -160,13 +76,13 @@ def write_contraction(G, tikzfile, stats_in_fig):
         ym -= spacing
         print >> fp, r'\node at (%5.3f,%5.3f) { Degree: %d};' % (0, ym, deg)
         ym -= spacing
-        print >> fp, r'\node at (%5.3f,%5.3f) { Num 4-cycles (parallel vranks): %d};' % (0, ym, num_4cycles)
+        print >> fp, r'\node at (%5.3f,%5.3f) { Num 4-cycles (parallel vranks): %d};' % (0, ym, num_cycles[4])
         ym -= spacing
-        print >> fp, r'\node at (%5.3f,%5.3f) { Num 6-cycles: %d};' % (0, ym, num_6cycles / 3)
+        print >> fp, r'\node at (%5.3f,%5.3f) { Num 6-cycles: %d};' % (0, ym, num_cycles[6])
         ym -= spacing
-        print >> fp, r'\node at (%5.3f,%5.3f) { Num 8-cycles: %d};' % (0, ym, num_8cycles / 4)
+        print >> fp, r'\node at (%5.3f,%5.3f) { Num 8-cycles: %d};' % (0, ym, num_cycles[8])
         ym -= spacing
-        iso, worst = vertex_isoperimetric(G)
+        iso, worst = solve.vertex_isoperimetric(G)
         worst = ' '.join([str(v) for v in worst])
         print >> fp, r'\node at (%5.3f,%5.3f) { Vertex isoperimetric number: %5.3f for %s};' % (0, ym, iso, worst)
 
