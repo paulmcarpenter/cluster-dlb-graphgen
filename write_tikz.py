@@ -4,6 +4,7 @@ import copy
 
 
 def subsets(l):
+    assert len(l) > 0
     if len(l) == 1:
         yield []
         yield [l[0]]

@@ -2,6 +2,7 @@
 import sys
 import getopt
 import solve
+import make_graph
 import random
 import numpy
 import math
@@ -15,6 +16,7 @@ def Usage(argv):
     print argv[0], '   <#vranks>  <#nodes>  <degree>'
     print '   --all               Create all topologies'
     print '   --help              Show this help'
+    print '   --desc desc         Provide description as per NANOS6_CLUSTER_SPLIT'
     print '   --dot dotfile       Generate a .dot file'
     print '   --tikz-bipartite    Generate a tikz script for bipartite graph'
     print '   --tikz-contraction  Generate a tikz script for contraction graph'
@@ -79,8 +81,9 @@ def main(argv):
     doall = False
     method = 'matching'
     num_trials =1
+    desc = None
     try:
-        opts, args = getopt.getopt( argv[1:], 'h', ['help', 'dot=', 'seed=', 'all', 'method=', 'trials=', 'tikz-bipartite=', 'tikz-contraction='])
+        opts, args = getopt.getopt( argv[1:], 'h', ['help', 'dot=', 'seed=', 'all', 'method=', 'trials=', 'tikz-bipartite=', 'tikz-contraction=', 'desc='])
     except getopt.error, msg:
         print msg
         print "for help use --help"
@@ -90,6 +93,8 @@ def main(argv):
             return Usage(argv)
         elif o == '--dot':
             dotfile = a
+        elif o == '--desc':
+            desc = a
         elif o == '--tikz-bipartite':
             tikz_bipartite = a
         elif o == '--tikz-contraction':
@@ -107,14 +112,20 @@ def main(argv):
     random.seed(seed)
 
     if not doall:
-        if len(args) != 3:
-            return Usage(argv)
+        if desc:
+            G = make_graph.make_from_desc(desc)
+            s = desc
+            if not dotfile is None:
+                write_dot(G, dotfile)
+        else:
+            if len(args) != 3:
+                return Usage(argv)
 
-        vranks = int(args[0])
-        nodes = int(args[1])
-        deg = int(args[2])
+            vranks = int(args[0])
+            nodes = int(args[1])
+            deg = int(args[2])
 
-        G, s = find_best(vranks, nodes, deg, num_trials, dotfile, method=method)
+            G, s = find_best(vranks, nodes, deg, num_trials, dotfile, method=method)
         if tikz_bipartite:
             write_tikz.write_bipartite(G, tikz_bipartite)
         if tikz_contraction:
@@ -122,6 +133,9 @@ def main(argv):
         print 'export NANOS6_CLUSTER_SPLIT="%s"' % s
 
     else:
+        if desc is not None:
+            print 'Cannot use --desc and --do-all'
+            return 1
         assert dotfile is None
 
         topologies = []
