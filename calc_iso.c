@@ -11,11 +11,9 @@ float iso = 1.0;
 void sub(node_bitmask_t *adj, node_bitmask_t nodes_used, int vranks_used, int total_vranks, int vrank_next, int num_all_nodes)
 {
     int num_n = __builtin_popcount(nodes_used);
-    if (vranks_used > 0) {
-        float val = 1.0 * num_n / vranks_used;
-        if (val < iso) {
-            iso = val;
-        }
+    float val = (float)num_n / vranks_used;
+    if (val < iso) {
+        iso = val;
     }
     if (num_n < num_all_nodes && vranks_used < num_all_nodes) {
         // Choose next item to add
