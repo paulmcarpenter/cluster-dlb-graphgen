@@ -29,7 +29,7 @@ def Usage(argv):
 	print('   --seed s            Random seed')
 	print('   --method m          Method: config, greedy or matching')
 	print('   --stats-in-fig      Include statistics in the figure')
-	print('   --inc incr          Set increment for regular case; e.g. 1,2;3,4')
+	print('   --inc incr          Set increment for regular case; e.g. 1.2;3.4')
 
 def graph_to_nanos_string(n, squash, deg, G):
 
@@ -49,7 +49,7 @@ def graph_to_nanos_string(n, squash, deg, G):
 				gdesc.append(node)
 		desc.append(gdesc)
 
-	return ';'.join([ ','.join([str(e) for e in gdesc]) for gdesc in desc])
+	return ';'.join([ '.'.join([str(e) for e in gdesc]) for gdesc in desc])
 
 
 def process(n, squash, deg, seed, method, inc):
@@ -80,7 +80,7 @@ def find_best(vranks, nodes, deg, num_trials, dotfile, method, inc):
 	return best_G, best_s
 
 def unpack_inc_str(inc_str, vranks, num_nodes, degree, squash):
-	inc = [[int(x) for x in vr.split(',')] for vr in inc_str.split(';')]
+	inc = [[int(x) for x in vr.split('.')] for vr in inc_str.split(';')]
 	if len(inc) != squash:
 		print('inc', inc)
 		print('squash', squash)
