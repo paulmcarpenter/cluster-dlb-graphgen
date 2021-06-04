@@ -38,7 +38,7 @@ void build_cycle(node_bitmask_t *adj_vrank,
 				 int num_nodes,
 				 int first_vrank_bit,
 				 int cur_vrank,
-				 int cycle_len)
+				 int cycle_len_plus_one)
 {
 	// Choose next node
 	node_bitmask_t next_nodes = adj_vrank[cur_vrank] & ~nodes_used;
@@ -49,9 +49,9 @@ void build_cycle(node_bitmask_t *adj_vrank,
 
 		if (adj_node[next_node] & first_vrank_bit) {
 			// printf("Found cycle of len %d\n", cycle_len + 1);
-			cycle_count[cycle_len+1] ++;
+			cycle_count[cycle_len_plus_one] ++;
 		}
-		if (cycle_len+1 < MAX_CYCLE_LEN) {
+		if (cycle_len_plus_one < MAX_CYCLE_LEN) {
 			// Choose next vrank
 			vrank_bitmask_t next_vranks = adj_node[next_node] & ~vranks_used;
 			while (next_vranks) {
@@ -66,7 +66,7 @@ void build_cycle(node_bitmask_t *adj_vrank,
 							num_nodes,
 							first_vrank_bit,
 							next_vrank,
-							cycle_len+2);
+							cycle_len_plus_one+2);
 			}
 		}
 	}
@@ -105,7 +105,7 @@ void count_cycles(node_bitmask_t *adj_vrank, vrank_bitmask_t *adj_node, int tota
 								num_nodes,
 								1ULL << first_vrank,
 								second_vrank,
-								3);
+								4);
 				}
 			}
 		}
