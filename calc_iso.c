@@ -12,7 +12,7 @@ float iso = 1.0;
 
 void sub(node_bitmask_t *adj_vrank, node_bitmask_t nodes_used, int num_vranks_used, int total_vranks, int vrank_next, int num_all_nodes)
 {
-    int num_n = __builtin_popcount(nodes_used);
+    int num_n = __builtin_popcountll(nodes_used);
     float val = (float)num_n / num_vranks_used;
     if (val < iso) {
         iso = val;
@@ -44,7 +44,7 @@ void build_cycle(node_bitmask_t *adj_vrank,
 	node_bitmask_t next_nodes = adj_vrank[cur_vrank] & ~nodes_used;
 	while (next_nodes) {
 		int next_node = __builtin_ctzll(next_nodes);
-		next_nodes &= ~ (1 << next_node);
+		next_nodes &= ~ (1ULL << next_node);
 		// printf(" Next node = %d\n", next_node);
 
 		if (adj_node[next_node] & first_vrank_bit) {
@@ -56,7 +56,7 @@ void build_cycle(node_bitmask_t *adj_vrank,
 			vrank_bitmask_t next_vranks = adj_node[next_node] & ~vranks_used;
 			while (next_vranks) {
 				int next_vrank = __builtin_ctzll(next_vranks);
-				next_vranks &= ~ (1 << next_vrank);
+				next_vranks &= ~ (1ULL << next_vrank);
 				// printf(" Next vrank = %d\n", next_vrank);
 				build_cycle(adj_vrank,
 							adj_node,
@@ -82,20 +82,20 @@ void count_cycles(node_bitmask_t *adj_vrank, vrank_bitmask_t *adj_node, int tota
 		while (first_nodes) {
 			int first_node = __builtin_ctzll(first_nodes);
 			// printf(" First node = %d\n", first_node);
-			assert(first_nodes & (1 << first_node));
-			first_nodes &= ~ (1 << first_node);
+			assert(first_nodes & (1ULL << first_node));
+			first_nodes &= ~ (1ULL << first_node);
 
 			// Choose second vrank (strictly after first to avoid double-counting)
 			vrank_bitmask_t second_vranks = adj_node[first_node];
 			while (second_vranks) {
 				int second_vrank = __builtin_ctzll(second_vranks);
-				assert(second_vranks & (1 << second_vrank));
-				second_vranks &= ~ (1 << second_vrank);
+				assert(second_vranks & (1ULL << second_vrank));
+				second_vranks &= ~ (1ULL << second_vrank);
 				if (second_vrank > first_vrank) {
 					// printf("%d -> [%d] -> %d\n", first_vrank, first_node, second_vrank);
 
 					vrank_bitmask_t vranks_used = ((1ULL << (first_vrank+1))-1ULL) // all vranks up to and including first_vrank
-												  | (1LL << second_vrank);  // and second vrank
+												  | (1ULL << second_vrank);  // and second vrank
 					node_bitmask_t nodes_used = (1ULL << first_node);
 					build_cycle(adj_vrank,
 								adj_node,
@@ -150,7 +150,7 @@ int main(int argc, char **argv)
     num_vranks += 1;
     for (int vrank=0; vrank < num_vranks; vrank++) {
         // printf("Vrank %d: adjacency 0x%llx\n", vrank, adj_vrank[vrank]);
-        // printf("%d\n", __builtin_popcount(adj_vrank[vrank]));
+        // printf("%d\n", __builtin_popcountll(adj_vrank[vrank]));
     }
 
 	vrank_bitmask_t adj_node[MAX_NODES];
@@ -164,7 +164,7 @@ int main(int argc, char **argv)
 		vrank_bitmask_t adj = 0;
 		for(int vrank=0; vrank<num_vranks; vrank++) {
 			if ((adj_vrank[vrank] >> node) & 1) {
-				adj |= 1 << vrank;
+				adj |= 1ULL << vrank;
 			}
 		}
 		adj_node[node] = adj;
