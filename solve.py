@@ -68,6 +68,20 @@ def node(i):
 	assert 0 <= i and i < num_nodes
 	return 'Node%d' % i
 
+def generate_degree1():
+	global num_vranks
+	global num_nodes
+	global squash
+	G = networkx.Graph()
+	for j in range(0,num_vranks):
+		G.add_node(vrank(j))
+	for j in range(0,num_nodes):
+		G.add_node(node(j))
+	for j in range(0, num_vranks):
+		k = j // squash
+		G.add_edge(vrank(j), node(k))
+	return G
+
 def generate_random_bipartite_matching(seed, inc):
 	global num_vranks
 	global num_nodes
@@ -301,8 +315,9 @@ def generate_random_bipartite(n, sq, deg, seed, method = 'matching', inverted = 
 	if key in memo_graphs:
 		return memo_graphs[key]
 
-	random.seed(seed) 
-	if method == 'config':
+	if degree == 1:
+		G = generate_degree1()
+	elif method == 'config':
 		assert squash == 1
 		G = generate_random_bipartite_config_model(n, deg)
 	elif method == 'greedy':
