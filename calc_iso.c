@@ -2,9 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAX_VRANKS 128
+#define MAX_VRANKS 64
+#define MAX_NODES 64
 
 typedef unsigned long long node_bitmask_t;
+typedef unsigned long long vrank_bitmask_t;
 
 float iso = 1.0;
 
@@ -59,11 +61,22 @@ int main(int argc, char **argv)
         // printf("%d\n", __builtin_popcount(adj_vrank[vrank]));
     }
 
+	vrank_bitmask_t adj_node[MAX_NODES];
+
     // printf("Number of nodes: %d\n", num_nodes);
     // printf("Number of vranks: %d\n", num_vranks);
 
     // Start with no vranks
-    node_bitmask_t nodes_used = 0;
+    vrank_bitmask_t nodes_used = 0;
+	for(int node=0; node<num_nodes;node++) {
+		vrank_bitmask_t adj = 0;
+		for(int vrank=0; vrank<num_vranks; vrank++) {
+			if ((adj_vrank[vrank] >> node) & 1) {
+				adj |= 1 << vrank;
+			}
+		}
+		adj_node[node] = adj;
+	}
 
     iso = 1.0;
     //  adj  nodes-used    #vranks   total-vranks   vrank_next  num_all_nodes
