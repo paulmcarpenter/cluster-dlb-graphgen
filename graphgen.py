@@ -1,16 +1,21 @@
-#! /usr/bin/env python3.7
+#! /usr/bin/env python
 import sys
 import getopt
 import solve
 import make_graph
 import random
-import numpy
 import math
 import time
 from networkx.drawing.nx_pydot import write_dot
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import write_tikz
+
+try:
+	import numpy as np
+	canImportNumpy = True
+except ImportError:
+	canImportNumpy = False
 
 def Usage(argv):
 	print(argv[0], '   <#vranks>  <#nodes>	<degree>')
@@ -93,6 +98,14 @@ def unpack_inc_str(inc_str, vranks, num_nodes, degree, squash):
 
 
 def main(argv):
+
+	if not canImportNumpy:
+		if len(argv) >= 2 and argv[1] == '--recurse':
+			print('Error with recursive invocation')
+			return 1
+		ret = os.system('module load python/3.6.1; python ' + argv[0] + ' --recurse ' + ' '.join(argv[1:]))
+		return ret
+
 	dotfile = None
 	tikz_bipartite = None
 	tikz_contraction = None
@@ -105,7 +118,7 @@ def main(argv):
 	stats_in_fig = False
 	inc_str = None
 	try:
-		opts, args = getopt.getopt( argv[1:], 'h', ['help', 'dot=', 'seed=', 'all-configs', 'method=', 'trials=', 'tikz-bipartite=', 'tikz-contraction=', 'desc=', 'stats-in-fig', 'inc=', 'all-inc'])
+		opts, args = getopt.getopt( argv[1:], 'h', ['help', 'recurse', 'dot=', 'seed=', 'all-configs', 'method=', 'trials=', 'tikz-bipartite=', 'tikz-contraction=', 'desc=', 'stats-in-fig', 'inc=', 'all-inc'])
 	except getopt.error as msg:
 		print(msg)
 		print("for help use --help")
@@ -113,6 +126,9 @@ def main(argv):
 	for o,a in opts:
 		if o in ('-h', '--help'):
 			return Usage(argv)
+		elif o == '--recurse':
+			# Ignore
+			pass
 		elif o == '--dot':
 			dotfile = a
 		elif o == '--desc':
