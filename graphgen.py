@@ -1,18 +1,19 @@
 #! /usr/bin/env python
 import sys
 import getopt
-import solve
-import make_graph
 import random
 import math
 import time
-from networkx.drawing.nx_pydot import write_dot
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
-import write_tikz
+import os
 
 try:
 	import numpy as np
+	from networkx.drawing.nx_pydot import write_dot
+	import solve
+	import make_graph
+	import matplotlib.pyplot as plt
+	from matplotlib.backends.backend_pdf import PdfPages
+	import write_tikz
 	canImportNumpy = True
 except ImportError:
 	canImportNumpy = False
