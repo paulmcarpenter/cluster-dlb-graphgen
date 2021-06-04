@@ -8,7 +8,7 @@ typedef unsigned long long node_bitmask_t;
 
 float iso = 1.0;
 
-void sub(node_bitmask_t *adj, node_bitmask_t nodes_used, int num_vranks_used, int total_vranks, int vrank_next, int num_all_nodes)
+void sub(node_bitmask_t *adj_vrank, node_bitmask_t nodes_used, int num_vranks_used, int total_vranks, int vrank_next, int num_all_nodes)
 {
     int num_n = __builtin_popcount(nodes_used);
     float val = (float)num_n / num_vranks_used;
@@ -18,8 +18,8 @@ void sub(node_bitmask_t *adj, node_bitmask_t nodes_used, int num_vranks_used, in
     if (num_n < num_all_nodes && num_vranks_used < num_all_nodes) {
         // Choose next item to add
         for (int vrank = vrank_next; vrank < total_vranks; vrank++) {
-            node_bitmask_t new_nodes_used = nodes_used | adj[vrank];
-            sub(adj, new_nodes_used, num_vranks_used + 1, total_vranks, vrank+1, num_all_nodes);
+            node_bitmask_t new_nodes_used = nodes_used | adj_vrank[vrank];
+            sub(adj_vrank, new_nodes_used, num_vranks_used + 1, total_vranks, vrank+1, num_all_nodes);
         }
     }
 }
@@ -31,32 +31,32 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    node_bitmask_t adj[MAX_VRANKS];
+    node_bitmask_t adj_vrank[MAX_VRANKS];
     int num_vranks = 0;
     int num_nodes = 1;
-    adj[num_vranks] = 0;
+    adj_vrank[num_vranks] = 0;
     for(char *s = argv[1]; *s != '\0'; s++) {
         char *endptr;
         int node = strtol(s, &endptr, 10);
         if (node >= num_nodes) {
             num_nodes = node+1;
         }
-        adj[num_vranks] |= 1 << node;
+        adj_vrank[num_vranks] |= 1 << node;
 
         s = endptr;
         if (*s == '\0') {
             break;
         } else if (*s == ';') {
             num_vranks += 1;
-            adj[num_vranks] = 0;
+            adj_vrank[num_vranks] = 0;
         } else {
             assert(*s == '.');
         } 
     }
     num_vranks += 1;
     for (int vrank=0; vrank < num_vranks; vrank++) {
-        // printf("Vrank %d: adjacency 0x%llx\n", vrank, adj[vrank]);
-        // printf("%d\n", __builtin_popcount(adj[vrank]));
+        // printf("Vrank %d: adjacency 0x%llx\n", vrank, adj_vrank[vrank]);
+        // printf("%d\n", __builtin_popcount(adj_vrank[vrank]));
     }
 
     // printf("Number of nodes: %d\n", num_nodes);
@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 
     iso = 1.0;
     //  adj  nodes-used    #vranks   total-vranks   vrank_next  num_all_nodes
-    sub(adj, nodes_used,   0,        num_vranks,    0,          num_nodes);
+    sub(adj_vrank, nodes_used,   0,        num_vranks,    0,          num_nodes);
 
     printf("%f\n", iso);
 
