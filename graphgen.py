@@ -191,8 +191,7 @@ def main(argv):
 				inc = [ [1], [x] ]
 				print(inc)
 				G, s = find_best(vranks, nodes, deg, num_trials, dotfile, method=method, inc=inc)
-				num_cycles = solve.calc_num_cycles(G, max_len=8)
-				vertex_iso, worst = solve.vertex_isoperimetric(G, True)
+				vertex_iso, num_cycles = solve.graph_metrics(G)
 				vals[ (vranks,x) ] = (num_cycles[4], num_cycles[6], num_cycles[8], vertex_iso)
 			print_row(vranks)
 
@@ -231,8 +230,8 @@ def main(argv):
 		if tikz_contraction:
 			write_tikz.write_contraction(G, tikz_contraction, stats_in_fig)
 		print('cluster.hybrid.split="%s"' % s)
-		solve.calc_num_cycles(G)
-		print('vertex isoperimetric number:', solve.vertex_isoperimetric(G))
+		vertex_iso, num_cycles = solve.graph_metrics(G)
+		#print('vertex isoperimetric number:', solve.vertex_isoperimetric(G))
 
 	else:
 		if desc is not None:

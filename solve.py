@@ -13,6 +13,7 @@ import rebalance
 import time
 import os
 import subprocess
+import re
 
 num_vranks = None
 num_nodes = None
@@ -90,7 +91,6 @@ def generate_random_bipartite_matching(seed, inc):
 	start_time = time.time()
 
 	if inc is None:
-		assert degree == 2
 		# even vrank 2j has slave on (j+1) % num_nodes
 		# odd vrank  2j+1 has slave on (j+x) % num_nodes
 		# where x = sqrt(num_nodes)
@@ -113,7 +113,7 @@ def generate_random_bipartite_matching(seed, inc):
 
 	if seed == 0:
 		num = 0
-		while num_done < degree:
+		while num_done < len(inc):
 			for sq in range(0,squash):
 				offset = inc[sq][num_done-1]
 				print('offset for vrank on node:', sq, 'is', offset)
@@ -321,7 +321,6 @@ def generate_random_bipartite(n, sq, deg, seed, method = 'matching', inverted = 
 		assert squash == 1
 		G = generate_random_bipartite_config_model(n, deg)
 	elif method == 'greedy':
-		assert squash == 1
 		G = generate_random_bipartite_greedy(n, deg, False)
 	else:
 		assert method == 'matching'
@@ -445,6 +444,32 @@ def graph_to_nanos_string(G):
 
 	return ';'.join([ '.'.join([str(e) for e in gdesc]) for gdesc in desc])
 
+def graph_metrics(G):
+	if True:
+		# Use the C code
+		calc_iso = os.path.dirname(os.path.realpath(__file__)) + '/calc_iso'
+		desc = graph_to_nanos_string(G)
+		p1 = subprocess.Popen([calc_iso, desc], stdout=subprocess.PIPE)
+		output = p1.communicate()[0].decode('utf-8')
+		lines = output.split('\n')
+		ret_cycles = {}
+		for line in lines:
+			print(line.strip())
+			m = re.match('Isoperimetric number: ([0-9.]*)', line)
+			if m:
+				vertex_iso = float(m.group(1))
+			m = re.match('Number of cycles of length ([1-9][0-9]*) *: *([0-9][0-9]*)', line)
+			if m:
+				cycle_len = int(m.group(1))
+				cycle_count = int(m.group(2))
+				ret_cycles[cycle_len] = cycle_count
+		return output, None
+
+	# Slow way
+	vertex_iso = vertex_isoperimetric(G)
+	num_cycles = calc_num_cycles(G, 16)
+	return vertex_iso, num_cycles
+
 def vertex_isoperimetric(G, assume_regular=False):
 
 	# Calculate minimum value of number of nodes / number of vranks
@@ -453,14 +478,6 @@ def vertex_isoperimetric(G, assume_regular=False):
 	n = num_nodes
 	m = n * squash
 	deg = degree
-
-	if assume_regular:
-		# Use the C code
-		calc_iso = os.path.dirname(os.path.realpath(__file__)) + '/calc_iso'
-		desc = graph_to_nanos_string(G)
-		p1 = subprocess.Popen([calc_iso, desc], stdout=subprocess.PIPE)
-		output = float(p1.communicate()[0])
-		return output, None
 
 	all_nodes = {}
 	for i in range(0,m):
@@ -484,7 +501,7 @@ def vertex_isoperimetric(G, assume_regular=False):
 
 
 def calc_num_cycles(G, max_len=50):
-	# cycle_basis only works for non-decorated graph?
+
 	global num_vranks
 	global num_nodes
 	global squash
