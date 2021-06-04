@@ -27,6 +27,7 @@ void sub(node_bitmask_t *adj_vrank, node_bitmask_t nodes_used, int num_vranks_us
 }
 
 #define MAX_CYCLE_LEN 16
+#define MAX_COUNT 1000000
 
 static int cycle_count[MAX_CYCLE_LEN+1] = {0,};
 
@@ -49,6 +50,10 @@ void build_cycle(node_bitmask_t *adj_vrank,
 
 		if (adj_node[next_node] & first_vrank_bit) {
 			// printf("Found cycle of len %d\n", cycle_len + 1);
+			if (cycle_count[cycle_len_plus_one] == (MAX_COUNT*2)) {
+				// Do not count this cycle or longer ones once the count is too big
+				return;
+			}
 			cycle_count[cycle_len_plus_one] ++;
 		}
 		if (cycle_len_plus_one < MAX_CYCLE_LEN) {
@@ -178,7 +183,10 @@ int main(int argc, char **argv)
 	count_cycles(adj_vrank, adj_node, num_vranks, num_nodes);
 
 	for(int len=2; len <= MAX_CYCLE_LEN; len+=2) {
-		printf("Number of cycles of length %d: %d\n", len, cycle_count[len]);
+		printf("Number of cycles of length %d: %s%d\n",
+				len,
+				(cycle_count[len] == MAX_COUNT) ? ">" : "",
+				cycle_count[len]);
 	}
 
     return 0;
