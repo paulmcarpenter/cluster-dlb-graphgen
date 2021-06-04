@@ -22,7 +22,7 @@ def Usage(argv):
 	print(argv[0], '   <#vranks>  <#nodes>	<degree>')
 	print('   --all-configs       Create topologies for all configs')
 	print('   --help              Show this help')
-	print('   --desc desc         Provide description as per NANOS6_CLUSTER_SPLIT')
+	print('   --desc desc         Provide description as per cluster.hybrid.split')
 	print('   --dot dotfile       Generate a .dot file')
 	print('   --tikz-bipartite    Generate a tikz script for bipartite graph')
 	print('   --tikz-contraction  Generate a tikz script for contraction graph')
@@ -230,7 +230,7 @@ def main(argv):
 			write_tikz.write_bipartite(G, tikz_bipartite, stats_in_fig)
 		if tikz_contraction:
 			write_tikz.write_contraction(G, tikz_contraction, stats_in_fig)
-		print('export NANOS6_CLUSTER_SPLIT="%s"' % s)
+		print('cluster.hybrid.split="%s"' % s)
 		solve.calc_num_cycles(G)
 		print('vertex isoperimetric number:', solve.vertex_isoperimetric(G))
 

@@ -428,7 +428,7 @@ def graph_to_nanos_string(G):
 				gdesc.append(j)
 		desc.append(gdesc)
 
-	return ';'.join([ ','.join([str(e) for e in gdesc]) for gdesc in desc])
+	return ';'.join([ '.'.join([str(e) for e in gdesc]) for gdesc in desc])
 
 def vertex_isoperimetric(G, assume_regular=False):
 

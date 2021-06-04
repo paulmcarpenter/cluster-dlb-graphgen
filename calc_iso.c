@@ -50,7 +50,7 @@ int main(int argc, char **argv)
             num_vranks += 1;
             adj[num_vranks] = 0;
         } else {
-            assert(*s == ',');
+            assert(*s == '.');
         } 
     }
     num_vranks += 1;
