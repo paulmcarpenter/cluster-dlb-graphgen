@@ -8,18 +8,18 @@ typedef unsigned long long node_bitmask_t;
 
 float iso = 1.0;
 
-void sub(node_bitmask_t *adj, node_bitmask_t nodes_used, int vranks_used, int total_vranks, int vrank_next, int num_all_nodes)
+void sub(node_bitmask_t *adj, node_bitmask_t nodes_used, int num_vranks_used, int total_vranks, int vrank_next, int num_all_nodes)
 {
     int num_n = __builtin_popcount(nodes_used);
-    float val = (float)num_n / vranks_used;
+    float val = (float)num_n / num_vranks_used;
     if (val < iso) {
         iso = val;
     }
-    if (num_n < num_all_nodes && vranks_used < num_all_nodes) {
+    if (num_n < num_all_nodes && num_vranks_used < num_all_nodes) {
         // Choose next item to add
         for (int vrank = vrank_next; vrank < total_vranks; vrank++) {
             node_bitmask_t new_nodes_used = nodes_used | adj[vrank];
-            sub(adj, new_nodes_used, vranks_used + 1, total_vranks, vrank+1, num_all_nodes);
+            sub(adj, new_nodes_used, num_vranks_used + 1, total_vranks, vrank+1, num_all_nodes);
         }
     }
 }
