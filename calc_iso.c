@@ -62,12 +62,12 @@ int main(int argc, char **argv)
     // printf("Number of nodes: %d\n", num_nodes);
     // printf("Number of vranks: %d\n", num_vranks);
 
-    // Start with first vrank
-    node_bitmask_t nodes_used = adj[0];
+    // Start with no vranks
+    node_bitmask_t nodes_used = 0;
 
     iso = 1.0;
     //  adj  nodes-used    #vranks   total-vranks   vrank_next  num_all_nodes
-    sub(adj, nodes_used,   1,        num_vranks,    1,          num_nodes);
+    sub(adj, nodes_used,   0,        num_vranks,    0,          num_nodes);
 
     printf("%f\n", iso);
 
