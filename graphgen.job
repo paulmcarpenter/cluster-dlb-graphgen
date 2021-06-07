@@ -1,0 +1,16 @@
+#! /bin/bash
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=48
+#SBATCH --time=02:00:00
+#SBATCH --qos=debug
+
+#ulimit -s 524288 # for AddressSanitizer
+
+./graphgen.py --trials 1 --samples 1 16 8 1
+./graphgen.py --trials 100 --samples 1000 16 8 2
+./graphgen.py --trials 100 --samples 1000 16 8 3
+./graphgen.py --trials 100 --samples 1000 16 8 4
+./graphgen.py --trials 100 --samples 1000 16 8 5
+./graphgen.py --trials 100 --samples 1000 16 8 6
+./graphgen.py --trials 100 --samples 1000 16 8 7
+./graphgen.py --trials 100 --samples 1000 16 8 8
