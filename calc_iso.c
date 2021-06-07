@@ -30,6 +30,7 @@ void sub(node_bitmask_t *adj_vrank, node_bitmask_t nodes_used, int num_vranks_us
 #define MAX_COUNT 10000000
 
 static int cycle_count[MAX_CYCLE_LEN+1] = {0,};
+static int stop_here[MAX_CYCLE_LEN+1] = {0,};
 
 void build_cycle(node_bitmask_t *adj_vrank,
                  vrank_bitmask_t *adj_node,
@@ -52,11 +53,12 @@ void build_cycle(node_bitmask_t *adj_vrank,
 			// printf("Found cycle of len %d\n", cycle_len + 1);
 			if (cycle_count[cycle_len_plus_one] == (MAX_COUNT*2)) {
 				// Do not count this cycle or longer ones once the count is too big
+				stop_here[cycle_len_plus_one-2] = 1;
 				return;
 			}
 			cycle_count[cycle_len_plus_one] ++;
 		}
-		if (cycle_len_plus_one < MAX_CYCLE_LEN) {
+		if (!stop_here[cycle_len_plus_one]) {
 			// Choose next vrank
 			vrank_bitmask_t next_vranks = adj_node[next_node] & ~vranks_used;
 			while (next_vranks) {
@@ -80,6 +82,7 @@ void build_cycle(node_bitmask_t *adj_vrank,
 void count_cycles(node_bitmask_t *adj_vrank, vrank_bitmask_t *adj_node, int total_vranks, int num_nodes)
 {
 	int first_vrank, second_vrank;
+	stop_here[MAX_CYCLE_LEN-2] = 1;
 	// Choose first vrank
 	for(first_vrank=0; first_vrank < total_vranks-1; first_vrank++) {
 		node_bitmask_t first_nodes = adj_vrank[first_vrank];
