@@ -2,7 +2,7 @@ import networkx
 import solve
 
 def make_from_desc(desc):
-    l = [[int(n) for n in vrank.split(',')] for vrank in desc.split(';')]
+    l = [[int(n) for n in vrank.split('.')] for vrank in desc.split(';')]
     num_vranks = len(l)
     num_nodes = 1 + max([ max(vrank) for vrank in l])
     degrees = [ len(vrank) for vrank in l]
