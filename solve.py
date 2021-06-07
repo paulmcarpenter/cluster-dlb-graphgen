@@ -94,7 +94,7 @@ def generate_random_bipartite_matching(seed, inc):
 		# even vrank 2j has slave on (j+1) % num_nodes
 		# odd vrank  2j+1 has slave on (j+x) % num_nodes
 		# where x = sqrt(num_nodes)
-		inc = [ [1], [int(math.sqrt(num_nodes))] ]
+		inc = [ [1], [int(0.5+math.sqrt(num_nodes))] ]
 
 	G = networkx.Graph()
 	for j in range(0,num_vranks):
