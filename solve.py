@@ -240,6 +240,7 @@ def generate_random_bipartite_config_model(n, deg):
 	trial = 1
 	assert 0 <= deg and deg <= n
 
+
 	while not done:
 
 		fail = False

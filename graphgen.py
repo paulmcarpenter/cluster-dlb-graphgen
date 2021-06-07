@@ -69,6 +69,11 @@ def find_best(vranks, nodes, deg, num_trials, num_samples, dotfile, method, inc)
 	best_s = None
 	assert vranks % nodes == 0
 	squash = vranks // nodes
+
+	if method == 'config' and nodes != vranks:
+		print('Config model assumes #appranks == #nodes')
+		sys.exit(1)
+
 	try:
 		for trial in range(0,num_trials):
 			G, s = process(nodes, squash, deg, trial, method=method, inc=inc)
