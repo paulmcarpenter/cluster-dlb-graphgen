@@ -27,7 +27,7 @@ void sub(node_bitmask_t *adj_vrank, node_bitmask_t nodes_used, int num_vranks_us
 }
 
 #define MAX_CYCLE_LEN 16
-#define MAX_COUNT 1000000
+#define MAX_COUNT 10000000
 
 static int cycle_count[MAX_CYCLE_LEN+1] = {0,};
 
