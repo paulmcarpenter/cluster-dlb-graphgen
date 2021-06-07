@@ -306,8 +306,6 @@ def generate_random_bipartite_config_model(n, deg):
 			#	  raise ValueError
 	return G
 
-memo_graphs = {}
-
 def generate_random_bipartite(n, sq, deg, seed, method = 'matching', inverted = False, inc=None):
 
 	# Set up global variables
@@ -319,12 +317,6 @@ def generate_random_bipartite(n, sq, deg, seed, method = 'matching', inverted = 
 	num_nodes = n
 	squash = sq
 	degree = deg
-
-	# Use a memo so reuse graph for (n,deg,seed)
-	global memo_graphs
-	key = (n,squash,deg,seed, str(inc))
-	if key in memo_graphs:
-		return memo_graphs[key]
 
 	if degree == 1:
 		G = generate_degree1()
@@ -343,8 +335,6 @@ def generate_random_bipartite(n, sq, deg, seed, method = 'matching', inverted = 
 	for j in range(0,n):
 		assert G.degree(node(j)) == deg*sq
 
-	# Remember this graph
-	memo_graphs[key] = G
 	return G
 						
 

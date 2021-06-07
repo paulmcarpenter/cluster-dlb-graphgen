@@ -30,7 +30,7 @@ def Usage(argv):
 	print(f'   --tikz-bipartite    Generate a tikz script for bipartite graph')
 	print(f'   --tikz-contraction  Generate a tikz script for contraction graph')
 	print(f'   --seed s            Random seed')
-	print(f'   --method m          Method: config, greedy or matching')
+	print(f'   --method m          Method: config, greedy or matching (can round-robin multiple methods with ,)')
 	print(f'   --stats-in-fig      Include statistics in the figure')
 	print(f'   --inc incr          Set increment for regular case; e.g. 1.2;3.4')
 	print(f'   --trials            Number of topology graphs to evaluate (default {default_num_trials})')
@@ -57,34 +57,39 @@ def graph_to_nanos_string(n, squash, deg, G):
 	return ';'.join([ '.'.join([str(e) for e in gdesc]) for gdesc in desc])
 
 
-def process(n, squash, deg, seed, method, inc):
-	G = solve.generate_random_bipartite(n, squash, deg, seed, method = method, inc=inc)
+def process(n, squash, deg, trial_num, method, inc):
+	G = solve.generate_random_bipartite(n, squash, deg, trial_num, method = method, inc=inc)
 
 	return G, graph_to_nanos_string(n, squash, deg, G)
 
 
-def find_best(vranks, nodes, deg, num_trials, num_samples, dotfile, method, inc):
+def find_best(vranks, nodes, deg, num_trials, num_samples, dotfile, methods, inc):
 	best_imb = None
 	best_G = None
 	best_s = None
+	best_method, best_trial = None, None
 	assert vranks % nodes == 0
 	squash = vranks // nodes
 
-	if method == 'config' and nodes != vranks:
+	num_methods = len(methods)
+	if 'config' in methods and nodes != vranks:
 		print('Config model assumes #appranks == #nodes')
 		sys.exit(1)
 
 	try:
 		for trial in range(0,num_trials):
-			G, s = process(nodes, squash, deg, trial, method=method, inc=inc)
-			print('nodes=%d vranks=%d deg=%d: %s' % (nodes, vranks, deg, s), end='')
+			method = methods[trial % num_methods]
+			G, s = process(nodes, squash, deg, trial // num_methods, method=method, inc=inc)
+			print(f'method={method} trial={trial} nodes={nodes} vranks={vranks} deg={deg}: {s}', end = ' ')
 			imb,std = solve.evaluate_graph(G, nodes, squash, deg, samples=num_samples)
 			print('Imbalance %.3f +/- %.3f' % (imb, std))
 			if best_imb is None or imb < best_imb:
 				best_imb, best_G, best_s = imb, G, s
+				best_method, best_trial = method, trial
 	except ValueError:
 		print('Exceeded time limit')
 
+	print(f'\nBest graph was method={best_method} trial={best_trial}')
 	if (not dotfile is None) and (not best_G is None):
 		write_dot(best_G, dotfile)
 	return best_G, best_s
@@ -123,7 +128,7 @@ def main(argv):
 	seed = 1
 	doall_configs = False
 	doall_inc = False
-	method = 'matching'
+	methods = ['matching']
 	num_trials = default_num_trials
 	num_samples = default_num_samples
 	desc = None
@@ -164,9 +169,10 @@ def main(argv):
 		elif o == '--inc':
 			inc_str = a
 		elif o == '--method':
-			method = a
-			if not method in ['config', 'greedy', 'matching']:
-				return Usage(argv)
+			methods = a.split(',')
+			for method in methods:
+				if not method in ['config', 'greedy', 'matching']:
+					return Usage(argv)
 	random.seed(seed)
 
 	if doall_inc:
@@ -203,7 +209,7 @@ def main(argv):
 			for x in range(2, 1+int(nodes//2)):
 				inc = [ [1], [x] ]
 				print(inc)
-				G, s = find_best(vranks, nodes, deg, num_trials, num_samples, dotfile, method=method, inc=inc)
+				G, s = find_best(vranks, nodes, deg, num_trials, num_samples, dotfile, methods=methods, inc=inc)
 				vertex_iso, num_cycles = solve.graph_metrics(G)
 				vals[ (vranks,x) ] = (num_cycles[4], num_cycles[6], num_cycles[8], vertex_iso)
 			print_row(vranks)
@@ -237,7 +243,7 @@ def main(argv):
 			else:
 				inc = None
 
-			G, s = find_best(vranks, nodes, deg, num_trials, num_samples, dotfile, method=method, inc=inc)
+			G, s = find_best(vranks, nodes, deg, num_trials, num_samples, dotfile, methods=methods, inc=inc)
 		if tikz_bipartite:
 			write_tikz.write_bipartite(G, tikz_bipartite, stats_in_fig)
 		if tikz_contraction:
@@ -259,7 +265,7 @@ def main(argv):
 					try:
 						trial = 0
 						vranks = nodes * squash
-						G, s = find_best(vranks, nodes, deg, num_trials, num_samples, dotfile, method=method)
+						G, s = find_best(vranks, nodes, deg, num_trials, num_samples, dotfile, methods=methods)
 						topologies.append( (vranks, nodes, deg, s) )
 					except ValueError:
 						print('#(nodes=%d,vranks=%d,deg=%d) -- exceeded time limit' % (nodes,vranks,deg))
